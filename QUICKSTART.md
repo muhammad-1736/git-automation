@@ -6,7 +6,7 @@
 
 ```bash
 git clone LINK_TO_REPO
-cd cherry-picker
+cd cherry_picker
 ```
 
 ### 1. Install Dependencies
