@@ -1,0 +1,102 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Cherry Picker CLI Tool
+ * 
+ * A standalone PHP package for automated Git cherry-picking with WMT(Work Management Tool - Jira) and VCS(Version Control System - GitLab) integrations.
+ */
+
+// [START] Autoloader
+    $autoloadPath = __DIR__ . '/../vendor/autoload.php';
+
+    if (!file_exists($autoloadPath)) {
+        fwrite(STDERR, "Error: Composer autoloader not found. Please run 'composer install'.\n");
+        exit(1);
+    }
+    require_once $autoloadPath;
+// [END] Autoloader
+
+
+use Mu\CherryPicker\Container;
+use Mu\CherryPicker\CLIService;
+use function Laravel\Prompts\error;
+use function Laravel\Prompts\info;
+
+$basePath = dirname(__DIR__);
+
+if (!file_exists($basePath . '/.env')) {
+    error('No .env file found! Please copy env.example to .env and configure it.');
+    info('Run: cp .env.example .env');
+    exit(1);
+}
+
+// [START] Initialize container
+    try {
+        global $container;
+        $container = new Container($basePath);
+    } catch (\Exception $e) {
+        error('Failed to initialize application: ' . $e->getMessage());
+        exit(1);
+    }
+// [END] Initialize container
+
+// Parse command line arguments
+$options = getopt('', [
+    'commits-strategy',
+    'help',
+]);
+
+if (isset($options['help'])) {
+    showHelp();
+    exit(0);
+}
+
+// [START] Run the CLI Service
+    try {
+        $cliService = $container->get(CLIService::class);
+        $cliService->setOptions($options);
+        $cliService->execute();
+    } catch (\Exception $e) {
+        error('Cherry-pick failed: ' . $e->getMessage());
+        exit(1);
+    }
+// [END] Run the CLI Service
+
+function showHelp(): void
+{
+    echo <<<HELP
+
+Cherry Picker CLI Tool
+======================
+
+A standalone PHP package for automated Git cherry-picking with Jira and GitLab integrations.
+
+USAGE:
+    cherry-picker [OPTIONS]
+
+OPTIONS:
+    --commits-strategy      Use manual commit input instead of MR IDs (default: use MR IDs)
+    --help                  Show this help message
+
+EXAMPLES:
+    # Default mode - asks for MR IDs
+    cherry-picker
+
+    # Manual commits mode
+    cherry-picker --commits-strategy
+
+CONFIGURATION:
+    Before using, copy env.example to .env and configure your credentials:
+        cp env.example .env
+
+    Required environment variables:
+        - GIT_USERNAME, GIT_EMAIL
+        - PERSONAL_TOKEN (GitLab)
+        - JIRA_EMAIL, JIRA_TOKEN
+        - API URLs for GitLab and Jira
+
+For more information, visit: https://github.com/MuhammadQuran17/cherry-picker
+
+HELP;
+}
