@@ -2,6 +2,8 @@
 
 Language agnostic package for automated Git cherry-picking with WMT (Work Management Tool - Jira) and VCS (Version Control System - GitLab) integrations for team work. Can be usefull to backport changes to branches, clone fixes or features to separate projects. This package streamlines the process of cherry-picking commits across branches, automatically creating merge requests with proper metadata from WMT tickets (Jira).
 
+[Demo video and presentation link](https://docs.google.com/presentation/d/1Ml6Oe2MLj1rt9jNuCKSDl3zp5pIaQIqUMb8pnTqHdVM/edit?usp=sharing)
+
 ## How it works (diagram)
 
 ![Cherry Picker Diagram](/assets/diagram.png)
