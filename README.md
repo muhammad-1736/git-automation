@@ -28,7 +28,7 @@ Please read [QUICKSTART.md](QUICKSTART.md)
 ## What Happens During Execution?
 
 1. **Preparation**
-    - (Optional - turned off by default), Configures git user-name/email, remote origin
+    - (Optional - turned ON by default), Configures git user-name/email, remote origin
     - Stashes current changes
 2. **WMT (Jira) operations**
    - It gets using Jira API necessary data from Issue data: fix_version (e.g. 2.0.0, 2.0.5) ; feature or bug (from IssueType) ; summary (aka title)
