@@ -62,7 +62,7 @@ describe('JiraClient', function () {
 
             $type = $jiraClient->getFeatureOrBug('JIRA-123');
 
-            expect($type)->toBe('bug');
+            expect($type)->toBe('bugfix');
         });
 
         it('throws exception for unknown issue type', function () {

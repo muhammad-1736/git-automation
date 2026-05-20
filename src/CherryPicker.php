@@ -32,7 +32,9 @@ class CherryPicker
 
             $this->shell->run("git stash push");
             $this->shell->run("git pull origin {$dto->fixVersionBranchName()}");
+            sleep(5);
             $this->shell->run("git checkout {$dto->fixVersionBranchName()}");
+            sleep(10);
             $this->shell->run("git checkout -b $dto->ticketBranchName");
             $this->shell->run("git fetch origin");
             $result = $this->shell->runWithoutOutputAndError("git cherry-pick -x $dto->commitHashes");  // cherry-picking
@@ -74,7 +76,23 @@ class CherryPicker
 
         if ($resume['exit_code'] === 0) {
             \Laravel\Prompts\info('Cherry-pick completed successfully! 😎');
-        } else {
+        } 
+
+        // empty commit (no changes were applied)
+        elseif (str_contains((string)$resume['error_output'], 'cherry-pick --skip') || str_contains((string)$resume['error_output'], 'is now empty')) {
+            \Laravel\Prompts\warning('The cherry-pick is empty (likely already applied). Skipping this commit automatically...');
+            $skip = $this->shell->runWithoutOutputAndError('git cherry-pick --skip');
+            
+            if ($skip['exit_code'] === 0) {
+                \Laravel\Prompts\info('Skipped empty commit successfully! 😎');
+            } else {
+                error('Next commit has conflicts or errors: ' . $skip['error_output']);
+                $this->conflictResolution();
+            }
+        } 
+        
+        // still other conflicts
+        else {
             error('Still having trouble 🥲: ' . $resume['error_output']);
             $this->conflictResolution();
         }
