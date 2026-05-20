@@ -10,10 +10,15 @@ readonly class CherryPickDTO
         public string $commitHashes,
         public string $ticketBranchName,
         public string $titleMR,
+        public ?string $cloneFixVersionBranchName = null,
     ) {}
 
     public function fixVersionBranchName(): string
     {
+        if ($this->cloneFixVersionBranchName) {
+            return $this->cloneFixVersionBranchName;
+        }
+
         $parts = explode('.', $this->fixVersion);
 
         if (isset($parts[2]) && $parts[2] === '0' && !isset($parts[3])) {

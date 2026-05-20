@@ -5,6 +5,7 @@ namespace Mu\CherryPicker;
 use Mu\CherryPicker\Contracts\VCSProviderContract;
 use Mu\CherryPicker\DataTransferObjects\CherryPickDTO;
 use function Laravel\Prompts\text;
+use function Laravel\Prompts\select;
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\note;
@@ -29,6 +30,23 @@ class CLIService
     public function execute(): void
     {
         note($this->getWelcomeAscii());
+
+        $workflowType = select(
+            label: 'What do you want to do?',
+            options: [
+                'merge_back_to_core' => 'Merge back to core',
+                'clone'              => 'Clone',
+            ],
+            default: 'merge_back_to_core'
+        );
+
+        $cloneFixVersionBranchName = null;
+        if ($workflowType === 'clone') {
+            $cloneFixVersionBranchName = text(
+                label: 'Please give me the (fixVersion) branch in core side to which we should clone the fix (e.g. platform/13.2.0/zlw)',
+                required: true
+            );
+        }
 
         $ticketNumber = text('Please provide me ticket', 'SOCS-test');
 
@@ -84,7 +102,8 @@ class CLIService
             $fixVersion,
             $commitsHashes,
             $ticketBranchName,
-            $titleMR
+            $titleMR,
+            $cloneFixVersionBranchName
         ));
         info('✅ Cherry-pick completed successfully!');
     }
