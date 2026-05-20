@@ -48,7 +48,7 @@ class CherryPicker
             $this->shell->run("git push origin $dto->ticketBranchName"); // pushing
             $this->shell->run("git checkout $initialBranch");
             $this->shell->run("git branch -D $dto->ticketBranchName"); // deleting
-            $this->shell->run("git stash pop");
+            $this->shell->runWithoutOutputAndError("git stash pop");
 
             // Create an MR
             $this->vcs->createMergeRequest(

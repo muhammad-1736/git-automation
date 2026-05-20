@@ -20,7 +20,10 @@ class ShellRunner
             throw new ProcessFailedException($process);
         }
     }
-
+    
+    /*
+    * Without output to CLI stdout
+    */
     public function runWithoutOutputAndError(string $command): array
     {
         $process = Process::fromShellCommandline($this->goToRootFolder() . $command);
