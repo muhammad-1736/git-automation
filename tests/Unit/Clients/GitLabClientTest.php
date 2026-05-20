@@ -298,9 +298,9 @@ function createGitlabMockResponse(array $data) {
 
 function createMockResponse() {
     $mockResponse = \Mockery::mock(ResponseInterface::class);
-    $mockResponse->shouldReceive('getStatusCode')->andReturn(200);
+    $mockResponse->shouldReceive('getStatusCode')->andReturn(201);
     $mockResponse->shouldReceive('getBody->getContents')
-        ->andReturn(json_encode([]));
+        ->andReturn(json_encode(['web_url' => 'https://gitlab.example.com/test-group/platform/-/merge_requests/1']));
 
     return $mockResponse;
 }

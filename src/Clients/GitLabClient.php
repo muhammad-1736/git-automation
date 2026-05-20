@@ -7,6 +7,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Mu\CherryPicker\Contracts\VCSProviderContract;
 use Mu\CherryPicker\Config\ConfigLoader;
 use function Laravel\Prompts\warning;
+use function Laravel\Prompts\info;
 
 class GitLabClient implements VCSProviderContract
 {
@@ -66,7 +67,11 @@ class GitLabClient implements VCSProviderContract
                 ],
             ]);
 
-            if ($response->getStatusCode() >= 400) {
+            $data = json_decode($response->getBody()->getContents(), true);
+
+            if ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300) {
+                info('GitLab merge request created successfully: ' . ($data['web_url'] ?? 'Link not available'));
+            } else {
                 warning('Failed to create GitLab merge request, make it manually');
             }
         } catch (GuzzleException $e) {
