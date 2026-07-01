@@ -22,7 +22,7 @@ class ShellRunner
     }
     
     /*
-    * Without output to CLI stdout
+    * Without output And error to CLI stdout
     */
     public function runWithoutOutputAndError(string $command): array
     {

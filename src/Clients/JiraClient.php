@@ -52,6 +52,8 @@ class JiraClient implements WMTProviderContract
      */
     public function getFixVersion(string $ticketNumber): string
     {
+        return '2.0.0';
+        
         $fixVersionName = $this->getDataSafe($ticketNumber, 'fields.fixVersions.0.name', 'No fix version found in Ticket. Or maybe Jira Api was changed (less likely but double check their API release notes if ticket has Fix version)');
 
         if (preg_match('/([\d.]+)$/', $fixVersionName, $matches)) {

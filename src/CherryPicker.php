@@ -30,13 +30,15 @@ class CherryPicker
             // Prepare git global username email, rebase on pull
             $this->git->prepare();
 
-            $this->shell->run("git stash push");
-            $this->shell->run("git pull origin {$dto->fixVersionBranchName()}");
-            sleep(5);
-            $this->shell->run("git checkout {$dto->fixVersionBranchName()}");
-            sleep(10);
-            $this->shell->run("git checkout -b $dto->ticketBranchName");
+            $hasChangesToStash = !empty($this->shell->runShellExec("git status --porcelain -uno"));
+            if ($hasChangesToStash) $this->shell->run("git stash push");
+
             $this->shell->run("git fetch origin");
+            $this->shell->run("git checkout -B {$dto->fixVersionBranchName()} origin/{$dto->fixVersionBranchName()}");
+            $this->shell->run("git pull origin {$dto->fixVersionBranchName()}");
+            sleep(3);
+            $this->shell->run("git checkout -b $dto->ticketBranchName");
+
             $result = $this->shell->runWithoutOutputAndError("git cherry-pick -x $dto->commitHashes");  // cherry-picking
 
             if ($result['exit_code'] !== 0) {
@@ -48,7 +50,8 @@ class CherryPicker
             $this->shell->run("git push origin $dto->ticketBranchName"); // pushing
             $this->shell->run("git checkout $initialBranch");
             $this->shell->run("git branch -D $dto->ticketBranchName"); // deleting
-            $this->shell->runWithoutOutputAndError("git stash pop");
+
+            if ($hasChangesToStash) $this->shell->runWithoutOutputAndError("git stash pop");
 
             // Create an MR
             $this->vcs->createMergeRequest(
@@ -56,7 +59,7 @@ class CherryPicker
                 $dto->ticketBranchName,
                 $dto->fixVersionBranchName(),
                 $dto->titleMR,
-                null,
+                'Made With ❤️ by Cherry Picker Automation',
                 config('cherry-picker.git.username'),
                 config('cherry-picker.git.mr_reviewer_name'),
             );
