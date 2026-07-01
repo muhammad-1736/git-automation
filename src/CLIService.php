@@ -77,50 +77,52 @@ class CLIService
             }
         // [END] WMT interaction
 
-        if ($workflowType === 'clone') {
-            $parts = explode('.', $fixVersion);
+        // [START] Clone: get core fix version from composer.json
+            if ($workflowType === 'clone') {
+                $parts = explode('.', $fixVersion);
 
-            if (isset($parts[2]) && $parts[2] === '0' && !isset($parts[3])) {
-                $refBranchName = "release/{$fixVersion}";
-            } else {
-                $refBranchName = "hotfix/{$fixVersion}";
+                if (isset($parts[2]) && $parts[2] === '0' && !isset($parts[3])) {
+                    $refBranchName = "release/{$fixVersion}";
+                } else {
+                    $refBranchName = "hotfix/{$fixVersion}";
+                }
+
+                try {
+                    $ticketParts = explode('-', $ticketNumber);
+                    $prefix = strtoupper($ticketParts[0] ?? '');
+
+                    $groupName = match (true) {
+                        str_starts_with($prefix, 'SCOR') => 'scr',
+                        str_starts_with($prefix, 'UN') => 'uni',
+                        default => strtolower($prefix),
+                    };
+            
+                    $composerJsonContent = $this->vcsProvider->getFileContent($groupName, 'platform', 'composer.json', $refBranchName);
+
+                    $composerData = json_decode($composerJsonContent, true);
+
+                    if (!is_array($composerData)) {
+                        throw new \RuntimeException("Failed to parse composer.json as JSON.");
+                    }
+
+                    $sigmaCoreVersion = data_get($composerData, 'require.sigma/core');
+                    if (!$sigmaCoreVersion) {
+                        throw new \RuntimeException("Could not find require.sigma/core inside composer.json.");
+                    }
+
+                    // Strip 'dev-' prefix if present
+                    $cloneFixVersionBranchName = $sigmaCoreVersion;
+                    if (str_starts_with($sigmaCoreVersion, 'dev-')) {
+                        $cloneFixVersionBranchName = substr($sigmaCoreVersion, 4);
+                    }
+
+                    \Laravel\Prompts\info("Successfully resolved core side branch from composer.json: {$cloneFixVersionBranchName}");
+                } catch (\Exception $e) {
+                    error('Failed to retrieve or parse composer.json: ' . $e->getMessage());
+                    exit(1);
+                }
             }
-
-            try {
-                $ticketParts = explode('-', $ticketNumber);
-                $prefix = strtoupper($ticketParts[0] ?? '');
-                
-                $groupName = match (true) {
-                    str_starts_with($prefix, 'SCOR') => 'scr',
-                    str_starts_with($prefix, 'UN') => 'uni',
-                    default => strtolower($prefix),
-                };
-           
-                $composerJsonContent = $this->vcsProvider->getFileContent($groupName, 'platform', 'composer.json', $refBranchName);
-
-                $composerData = json_decode($composerJsonContent, true);
-
-                if (!is_array($composerData)) {
-                    throw new \RuntimeException("Failed to parse composer.json as JSON.");
-                }
-
-                $sigmaCoreVersion = data_get($composerData, 'require.sigma/core');
-                if (!$sigmaCoreVersion) {
-                    throw new \RuntimeException("Could not find require.sigma/core inside composer.json.");
-                }
-
-                // Strip 'dev-' prefix if present
-                $cloneFixVersionBranchName = $sigmaCoreVersion;
-                if (str_starts_with($sigmaCoreVersion, 'dev-')) {
-                    $cloneFixVersionBranchName = substr($sigmaCoreVersion, 4);
-                }
-
-                \Laravel\Prompts\info("Successfully resolved core side branch from composer.json: {$cloneFixVersionBranchName}");
-            } catch (\Exception $e) {
-                error('Failed to retrieve or parse composer.json: ' . $e->getMessage());
-                exit(1);
-            }
-        }
+        // [END] Clone: get core fix version from composer.json
 
         $ticketBranchName = "$featureOrBug/$ticketNumber";
 
