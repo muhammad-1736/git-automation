@@ -217,7 +217,7 @@ describe('GitLabClient', function () {
 
             $commits = $gitlabClient->getMergeRequestCommits(1);
 
-            expect($commits)->toBe('abc123def456 xyz789uvw123 qwe456rty789');
+            expect($commits)->toBe('qwe456rty789 xyz789uvw123 abc123def456');
         });
 
         it('throws exception when no commits found', function () {

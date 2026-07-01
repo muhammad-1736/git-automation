@@ -194,6 +194,10 @@ class GitLabClient implements VCSProviderContract
 
             $commits = '';
             $data = json_decode($response->getBody()->getContents(), true);
+            
+            // Reverse commits to chronological order (oldest first) so that cherry-pick applies them in the correct sequence
+            $data = array_reverse($data);
+            
             foreach ($data as $commit) {
                 $commits .= ' '.$commit['id'];
             }
