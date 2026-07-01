@@ -284,6 +284,78 @@ describe('GitLabClient', function () {
                 ->toThrow(\Exception::class);
         });
     });
+
+    describe('getFileContent', function () {
+        it('returns raw file content successfully', function () {
+            $mockGuzzleClient = \Mockery::mock(Client::class);
+
+            // Mock getProjectIdByGroup responses
+            $mockGuzzleClient->shouldReceive('get')
+                ->with('https://gitlab.example.com/api/v4/groups', \Mockery::any())
+                ->andReturn(createGitlabMockResponse([
+                    ['id' => 1, 'name' => 'px'],
+                ]));
+
+            $mockGuzzleClient->shouldReceive('get')
+                ->with('https://gitlab.example.com/api/v4/groups/1/projects', \Mockery::any())
+                ->andReturn(createGitlabMockResponse([
+                    ['id' => 101, 'path_with_namespace' => 'px/platform'],
+                ]));
+
+            // Mock get file raw content
+            $mockResponse = \Mockery::mock(ResponseInterface::class);
+            $mockResponse->shouldReceive('getStatusCode')->andReturn(200);
+            $mockResponse->shouldReceive('getBody->getContents')
+                ->andReturn('{"require":{"sigma/core": "12.3.4"}}');
+
+            $mockGuzzleClient->shouldReceive('get')
+                ->with('https://gitlab.example.com/api/v4/projects/101/repository/files/composer.json/raw', \Mockery::on(function ($options) {
+                    return isset($options['query']['ref']) && $options['query']['ref'] === 'release/2.0.0';
+                }))
+                ->andReturn($mockResponse);
+
+            $gitlabClient = new GitLabClient();
+            $reflection = new ReflectionClass($gitlabClient);
+            $property = $reflection->getProperty('client');
+            $property->setAccessible(true);
+            $property->setValue($gitlabClient, $mockGuzzleClient);
+
+            $content = $gitlabClient->getFileContent('px', 'platform', 'composer.json', 'release/2.0.0');
+
+            expect($content)->toBe('{"require":{"sigma/core": "12.3.4"}}');
+        });
+
+        it('throws RuntimeException on Guzzle Exception', function () {
+            $mockGuzzleClient = \Mockery::mock(Client::class);
+
+            // Mock getProjectIdByGroup responses
+            $mockGuzzleClient->shouldReceive('get')
+                ->with('https://gitlab.example.com/api/v4/groups', \Mockery::any())
+                ->andReturn(createGitlabMockResponse([
+                    ['id' => 1, 'name' => 'px'],
+                ]));
+
+            $mockGuzzleClient->shouldReceive('get')
+                ->with('https://gitlab.example.com/api/v4/groups/1/projects', \Mockery::any())
+                ->andReturn(createGitlabMockResponse([
+                    ['id' => 101, 'path_with_namespace' => 'px/platform'],
+                ]));
+
+            // Mock Guzzle exception
+            $mockGuzzleClient->shouldReceive('get')
+                ->with('https://gitlab.example.com/api/v4/projects/101/repository/files/composer.json/raw', \Mockery::any())
+                ->andThrow(new \GuzzleHttp\Exception\RequestException('Network error', \Mockery::mock(\Psr\Http\Message\RequestInterface::class)));
+
+            $gitlabClient = new GitLabClient();
+            $reflection = new ReflectionClass($gitlabClient);
+            $property = $reflection->getProperty('client');
+            $property->setAccessible(true);
+            $property->setValue($gitlabClient, $mockGuzzleClient);
+
+            expect(fn () => $gitlabClient->getFileContent('px', 'platform', 'composer.json', 'release/2.0.0'))
+                ->toThrow(\RuntimeException::class);
+        });
+    });
 });
 
 // Helper function for tests

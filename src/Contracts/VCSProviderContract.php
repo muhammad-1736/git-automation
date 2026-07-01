@@ -8,6 +8,13 @@ interface VCSProviderContract
 
     public function getPAT(): string;
 
+    public function getFileContent(
+        string $projectGroup,
+        string $projectName,
+        string $filePath,
+        string $ref
+    ): string;
+
     public function createMergeRequest(
         string $projectGroup,
         string $sourceBranch,

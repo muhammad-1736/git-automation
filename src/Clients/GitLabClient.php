@@ -205,4 +205,40 @@ class GitLabClient implements VCSProviderContract
             throw $e;
         }
     }
+
+    /**
+     * Get the raw content of a file from GitLab repository
+     *
+     * @param string $projectGroup
+     * @param string $projectName
+     * @param string $filePath
+     * @param string $ref
+     * @return string
+     * @throws \RuntimeException
+     */
+    public function getFileContent(
+        string $projectGroup,
+        string $projectName,
+        string $filePath,
+        string $ref
+    ): string {
+        $projectId = $this->getProjectIdByGroup($projectGroup, $projectName);
+        $encodedFilePath = urlencode($filePath);
+        $apiBaseUrl = config('cherry-picker.gitlab.api_url');
+
+        try {
+            $response = $this->client->get("$apiBaseUrl/projects/$projectId/repository/files/$encodedFilePath/raw", [
+                'headers' => [
+                    'PRIVATE-TOKEN' => $this->getPAT(),
+                ],
+                'query' => [
+                    'ref' => $ref,
+                ],
+            ]);
+
+            return $response->getBody()->getContents();
+        } catch (GuzzleException $e) {
+            throw new \RuntimeException("Failed to fetch file content from GitLab: " . $e->getMessage(), 0, $e);
+        }
+    }
 }
