@@ -82,12 +82,14 @@ class CherryPicker
         } 
 
         // empty commit (no changes were applied)
-        elseif (str_contains((string)$resume['error_output'], 'cherry-pick --skip') || str_contains((string)$resume['error_output'], 'is now empty')) {
+        elseif (str_contains((string)$resume['error_output'], 'The previous cherry-pick is now empty')) {
+            \Laravel\Prompts\warning($resume['error_output']);
             \Laravel\Prompts\warning('The cherry-pick is empty (likely already applied). Skipping this commit automatically...');
-            $skip = $this->shell->runWithoutOutputAndError('git cherry-pick --skip');
+            $skip = $this->shell->runWithoutOutputAndError('git commit --allow-empty');
             
             if ($skip['exit_code'] === 0) {
-                \Laravel\Prompts\info('Skipped empty commit successfully! 😎');
+                \Laravel\Prompts\info('Added empty commit successfully! 😎');
+                $this->shell->runWithoutOutputAndError('git cherry-pick --continue');
             } else {
                 error('Next commit has conflicts or errors: ' . $skip['error_output']);
                 $this->conflictResolution();
@@ -96,7 +98,7 @@ class CherryPicker
         
         // still other conflicts
         else {
-            error('Still having trouble 🥲: ' . $resume['error_output']);
+            error("Still having trouble 🥲: \n\n" . $resume['error_output']);
             $this->conflictResolution();
         }
     }

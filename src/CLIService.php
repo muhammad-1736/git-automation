@@ -92,9 +92,12 @@ class CLIService
                     $prefix = strtoupper($ticketParts[0] ?? '');
 
                     $groupName = match (true) {
-                        str_starts_with($prefix, 'SCOR') => 'scr',
-                        str_starts_with($prefix, 'UN') => 'uni',
-                        default => strtolower($prefix),
+                        str_starts_with($prefix, 'SCOR')   => 'scr',
+                        str_starts_with($prefix, 'ZILLOW') => 'zlw',
+                        str_starts_with($prefix, 'UN')     => 'uni',
+                        str_starts_with($prefix, 'LP')     => 'lprs',
+                        str_starts_with($prefix, 'OM')     => 'outsd',
+                        default                            => strtolower($prefix),
                     };
             
                     $composerJsonContent = $this->vcsProvider->getFileContent($groupName, 'platform', 'composer.json', $refBranchName);
