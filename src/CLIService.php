@@ -11,6 +11,8 @@ use function Laravel\Prompts\info;
 use function Laravel\Prompts\note;
 use Mu\CherryPicker\CherryPicker;
 use Mu\CherryPicker\Contracts\WMTProviderContract;
+use Mu\CherryPicker\Workflows\CommitAutomationWorkflow;
+use Mu\CherryPicker\TicketResolver;
 
 class CLIService
 {
@@ -20,6 +22,7 @@ class CLIService
         private WMTProviderContract $wmtProvider,
         private VCSProviderContract $vcsProvider,
         private CherryPicker $cherryPickService,
+        private CommitAutomationWorkflow $commitAutomationWorkflow,
     ) {}
 
     public function setOptions(array $options): void
@@ -36,46 +39,23 @@ class CLIService
             options: [
                 'merge_back_to_core' => 'Merge back to core',
                 'clone'              => 'Clone',
+                'commit_automation'  => 'Commit automation',
             ],
             default: 'merge_back_to_core'
         );
 
+        if ($workflowType === 'commit_automation') {
+            $this->commitAutomationWorkflow->execute();
+            return;
+        }
+
         $cloneFixVersionBranchName = null;
 
-        $ticketNumber = text('Please provide me ticket', 'SOCS-test');
-
-        // [START] WMT interaction
-            try {
-                $featureOrBug = $this->wmtProvider->getFeatureOrBug($ticketNumber);
-                $fixVersion   = $this->wmtProvider->getFixVersion($ticketNumber);
-                $titleMR      = $ticketNumber . ' ' . $this->wmtProvider->getSummary($ticketNumber);
-            } catch (\Exception $e) {
-                \Laravel\Prompts\warning('Jira access failed (' . $e->getMessage() . '). Falling back to manual input.');
-
-                $issueType = select(
-                    label: 'What is the issue type?',
-                    options: [
-                        'feature' => 'Feature',
-                        'bug'     => 'Bug',
-                    ],
-                    default: 'bug'
-                );
-                $featureOrBug = $issueType;
-
-                $fixVersion = text(
-                    label: 'Please provide the fixVersion (e.g. 12.0.1)',
-                    placeholder: '12.0.1',
-                    required: true
-                );
-
-                $summary = text(
-                    label: 'Please provide the ticket summary (for the Merge Request title)',
-                    placeholder: 'Fix issue with database connection',
-                    required: true
-                );
-                $titleMR = $ticketNumber . ' ' . $summary;
-            }
-        // [END] WMT interaction
+        $ticketDetails = TicketResolver::resolve($this->wmtProvider);
+        $ticketNumber = $ticketDetails['ticketNumber'];
+        $featureOrBug = $ticketDetails['featureOrBug'];
+        $fixVersion   = $ticketDetails['fixVersion'];
+        $titleMR      = $ticketDetails['titleMR'];
 
         // [START] Clone: get core fix version from composer.json
             if ($workflowType === 'clone') {

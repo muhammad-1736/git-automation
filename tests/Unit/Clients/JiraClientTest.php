@@ -102,27 +102,6 @@ describe('JiraClient', function () {
     });
 
     describe('getFixVersion', function () {
-        it('retrieves and normalizes single digit version', function () {
-            $mockClient = createMockGuzzleClient([
-                'fields' => [
-                    'summary' => 'Test Summary',
-                    'issuetype' => ['name' => 'Task'],
-                    'fixVersions' => [
-                        ['name' => 'v2'],
-                    ],
-                ],
-            ]);
-
-            $jiraClient = new JiraClient();
-            $reflection = new ReflectionClass($jiraClient);
-            $property = $reflection->getProperty('client');
-            $property->setAccessible(true);
-            $property->setValue($jiraClient, $mockClient);
-
-            $version = $jiraClient->getFixVersion('JIRA-123');
-
-            expect($version)->toBe('2.0.0');
-        });
 
         it('retrieves and normalizes two digit version', function () {
             $mockClient = createMockGuzzleClient([

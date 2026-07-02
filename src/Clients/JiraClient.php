@@ -54,16 +54,41 @@ class JiraClient implements WMTProviderContract
     {
         $fixVersionName = $this->getDataSafe($ticketNumber, 'fields.fixVersions.0.name', 'No fix version found in Ticket. Or maybe Jira Api was changed (less likely but double check their API release notes if ticket has Fix version)');
 
-        if (preg_match('/([\d.]+)$/', $fixVersionName, $matches)) {
-            $parts = explode('.', $matches[1]);
+        // The pattern now strictly requires a dot followed by digits (\.\d+)
+        if (preg_match_all('#(/)?(\d+\.\d+(?:\.\d+)*)#', $fixVersionName, $matches, PREG_SET_ORDER)) {
+            $count = count($matches);
+            $version = null;
 
-            // convert 2 -> 2.0.0 ;  2.0 -> 2.0.0
+            if ($count === 1) {
+                // Rule 1: If exactly 1 occurrence exists, take it
+                $version = $matches[0][2];
+            } elseif ($count === 2) {
+                // Rule 2: If 2 occurrences exist, get the one prefixed with '/'
+                $firstHasSlash  = !empty($matches[0][1]);
+                $secondHasSlash = !empty($matches[1][1]);
+
+                if ($firstHasSlash && !$secondHasSlash) {
+                    $version = $matches[0][2];
+                } elseif (!$firstHasSlash && $secondHasSlash) {
+                    $version = $matches[1][2];
+                } else {
+                    // Ambiguous: either both have a slash or neither does
+                    throw new \Exception('Fix version format is invalid.');
+                }
+            } else {
+                // Rule 3: 0 or more than 2 occurrences throw an exception
+                throw new \Exception('Fix version format is invalid.');
+            }
+
+            // Convert and normalize (e.g., 12.2 -> 12.2.0 ; 12.2.0 -> 12.2.0)
+            $parts = explode('.', $version);
             $normalizedParts = array_pad($parts, 3, '0');
 
             return implode('.', $normalizedParts);
         }
 
-        throw new Exception('Fix version format is invalid.');
+        // Throws exception if no valid version formats (X.Y or X.Y.Z) were found
+        throw new \Exception('Fix version format is invalid.');
     }
 
     /**

@@ -5,6 +5,7 @@ use Mu\CherryPicker\Contracts\VCSProviderContract;
 use Mu\CherryPicker\Contracts\WMTProviderContract;
 use Mu\CherryPicker\CherryPicker;
 use Mu\CherryPicker\DataTransferObjects\CherryPickDTO;
+use Mu\CherryPicker\Workflows\CommitAutomationWorkflow;
 use Laravel\Prompts\Prompt;
 use Laravel\Prompts\Key;
 
@@ -13,6 +14,7 @@ describe('CLIService', function () {
         $mockWmt = Mockery::mock(WMTProviderContract::class);
         $mockVcs = Mockery::mock(VCSProviderContract::class);
         $mockCherryPicker = Mockery::mock(CherryPicker::class);
+        $mockCommitAutomation = Mockery::mock(CommitAutomationWorkflow::class);
 
         // Mock WMT (Jira)
         $mockWmt->shouldReceive('getFeatureOrBug')->with('ZLW-231')->andReturn('feature');
@@ -66,7 +68,7 @@ describe('CLIService', function () {
             Key::ENTER,
         ]);
 
-        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker);
+        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker, $mockCommitAutomation);
         $cliService->execute();
 
         expect(true)->toBeTrue(); // If we get here without exception, mock was called successfully!
@@ -76,6 +78,7 @@ describe('CLIService', function () {
         $mockWmt = Mockery::mock(WMTProviderContract::class);
         $mockVcs = Mockery::mock(VCSProviderContract::class);
         $mockCherryPicker = Mockery::mock(CherryPicker::class);
+        $mockCommitAutomation = Mockery::mock(CommitAutomationWorkflow::class);
 
         // Mock WMT (Jira)
         $mockWmt->shouldReceive('getFeatureOrBug')->with('SCOR-980')->andReturn('bugfix');
@@ -120,7 +123,28 @@ describe('CLIService', function () {
             Key::ENTER,
         ]);
 
-        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker);
+        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker, $mockCommitAutomation);
+        $cliService->execute();
+
+        expect(true)->toBeTrue();
+    });
+
+    it('executes commit automation workflow when selected', function () {
+        $mockWmt = Mockery::mock(WMTProviderContract::class);
+        $mockVcs = Mockery::mock(VCSProviderContract::class);
+        $mockCherryPicker = Mockery::mock(CherryPicker::class);
+        $mockCommitAutomation = Mockery::mock(CommitAutomationWorkflow::class);
+
+        $mockCommitAutomation->shouldReceive('execute')
+            ->once();
+
+        Prompt::fake([
+            Key::DOWN,
+            Key::DOWN,
+            Key::ENTER,
+        ]);
+
+        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker, $mockCommitAutomation);
         $cliService->execute();
 
         expect(true)->toBeTrue();
