@@ -79,13 +79,7 @@ class CLIService
 
         // [START] Clone: get core fix version from composer.json
             if ($workflowType === 'clone') {
-                $parts = explode('.', $fixVersion);
-
-                if (isset($parts[2]) && $parts[2] === '0' && !isset($parts[3])) {
-                    $refBranchName = "release/{$fixVersion}";
-                } else {
-                    $refBranchName = "hotfix/{$fixVersion}";
-                }
+                $refBranchName = get_release_or_hotfix_branch($fixVersion);
 
                 try {
                     $ticketParts = explode('-', $ticketNumber);

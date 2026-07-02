@@ -93,3 +93,23 @@ if (!function_exists('dd')) {
         exit(1);
     }
 }
+
+if (!function_exists('get_release_or_hotfix_branch')) {
+    /**
+     * Resolve the reference branch name (release or hotfix) based on the fix version.
+     *
+     * @param string $fixVersion The fix version (e.g. 13.2.0, 13.2.5)
+     * @return string
+     */
+    function get_release_or_hotfix_branch(string $fixVersion): string
+    {
+        $parts = explode('.', $fixVersion);
+
+        if (isset($parts[2]) && $parts[2] === '0' && !isset($parts[3])) {
+            return "release/{$fixVersion}";
+        }
+
+        return "hotfix/{$fixVersion}";
+    }
+}
+

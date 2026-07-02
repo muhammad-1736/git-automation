@@ -19,12 +19,6 @@ readonly class CherryPickDTO
             return $this->cloneFixVersionBranchName;
         }
 
-        $parts = explode('.', $this->fixVersion);
-
-        if (isset($parts[2]) && $parts[2] === '0' && !isset($parts[3])) {
-            return "release/{$this->fixVersion}";
-        }
-
-        return "hotfix/{$this->fixVersion}";
+        return get_release_or_hotfix_branch($this->fixVersion);
     }
 }
