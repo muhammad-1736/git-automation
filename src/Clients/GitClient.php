@@ -23,8 +23,8 @@ class GitClient
         
         $this->shell->run("git config core.fileMode false");
         $this->shell->run("git config pull.rebase true");
-        $this->shell->run('git config --global user.name "' . config('cherry-picker.git.username') . '"');
-        $this->shell->run('git config --global user.email "' . config('cherry-picker.git.email') . '"');
+        $this->shell->run('git config user.name "' . config('cherry-picker.git.username') . '"');
+        $this->shell->run('git config user.email "' . config('cherry-picker.git.email') . '"');
         $this->shell->run("git remote set-url origin https://oauth2:$vcs_pat@gitlab.da.local/px/platform.git");
     }
 }
