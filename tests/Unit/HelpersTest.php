@@ -168,3 +168,24 @@ describe('data_get', function () {
         expect(data_get($array, 'database.connections.mysql.credentials.password'))->toBe('secret');
     });
 });
+
+describe('get_release_or_hotfix_branch', function () {
+    it('returns release branch when the third version segment is zero and there is no fourth segment', function () {
+        expect(get_release_or_hotfix_branch('13.2.0'))->toBe('release/13.2.0');
+        expect(get_release_or_hotfix_branch('1.0.0'))->toBe('release/1.0.0');
+    });
+
+    it('returns hotfix branch when the third version segment is non-zero', function () {
+        expect(get_release_or_hotfix_branch('13.2.5'))->toBe('hotfix/13.2.5');
+        expect(get_release_or_hotfix_branch('1.0.1'))->toBe('hotfix/1.0.1');
+    });
+
+    it('returns hotfix branch when there is a fourth version segment', function () {
+        expect(get_release_or_hotfix_branch('13.2.0.1'))->toBe('hotfix/13.2.0.1');
+    });
+
+    it('returns hotfix branch when the third version segment is not set', function () {
+        expect(get_release_or_hotfix_branch('13.2'))->toBe('hotfix/13.2');
+    });
+});
+
