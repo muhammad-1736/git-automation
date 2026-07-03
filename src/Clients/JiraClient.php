@@ -8,6 +8,8 @@ use GuzzleHttp\Exception\ClientException;
 use Exception;
 use Mu\CherryPicker\Contracts\WMTProviderContract;
 
+use function Laravel\Prompts\info;
+
 class JiraClient implements WMTProviderContract
 {
     private array $localCache = [];
@@ -84,7 +86,11 @@ class JiraClient implements WMTProviderContract
             $parts = explode('.', $version);
             $normalizedParts = array_pad($parts, 3, '0');
 
-            return implode('.', $normalizedParts);
+            $normalized_version = implode('.', $normalizedParts);
+
+            info("version is $normalized_version");
+
+            return $normalized_version;
         }
 
         // Throws exception if no valid version formats (X.Y or X.Y.Z) were found
