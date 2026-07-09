@@ -109,7 +109,7 @@ class GitLabClient implements VCSProviderContract
             $group_id = $data[0]['id'] ?? null;
 
             if (!isset($group_id)) {
-                warning('Failed to get Group ID');
+                warning('Failed to get Group ID: '.$groupName);
                 exit(1);
             }
 

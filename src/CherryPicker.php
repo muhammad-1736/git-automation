@@ -59,7 +59,8 @@ class CherryPicker
                 $dto->ticketBranchName,
                 $dto->fixVersionBranchName(),
                 $dto->titleMR,
-                'Made With ❤️ by Cherry Picker Automation',
+                null,
+                // 'Made With ❤️ by Cherry Picker Automation',
                 config('cherry-picker.git.username'),
                 config('cherry-picker.git.mr_reviewer_name'),
             );
