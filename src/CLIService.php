@@ -70,6 +70,7 @@ class CLIService
                         str_starts_with($prefix, 'ZILLOW') => 'zlw',
                         str_starts_with($prefix, 'UN')     => 'uni',
                         str_starts_with($prefix, 'LP')     => 'lprs',
+                        str_starts_with($prefix, 'PM0')    => 'pstm',
                         str_starts_with($prefix, 'OM')     => 'outsd',
                         default                            => strtolower($prefix),
                     };
