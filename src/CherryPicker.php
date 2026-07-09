@@ -37,7 +37,21 @@ class CherryPicker
             $this->shell->run("git checkout -B {$dto->fixVersionBranchName()} origin/{$dto->fixVersionBranchName()}");
             $this->shell->run("git pull origin {$dto->fixVersionBranchName()}");
             sleep(3);
-            $this->shell->run("git checkout -b $dto->ticketBranchName");
+
+            $localExists = $this->shell->runWithoutOutputAndError("git show-ref --verify refs/heads/{$dto->ticketBranchName}")['exit_code'] === 0;
+            $remoteExists = $this->shell->runWithoutOutputAndError("git show-ref --verify refs/remotes/origin/{$dto->ticketBranchName}")['exit_code'] === 0;
+
+            if ($localExists) {
+                $this->shell->run("git checkout {$dto->ticketBranchName}");
+                if ($remoteExists) {
+                    $this->shell->run("git pull origin {$dto->ticketBranchName}");
+                }
+            } elseif ($remoteExists) {
+                $this->shell->run("git checkout --track origin/{$dto->ticketBranchName}");
+                $this->shell->run("git pull origin {$dto->ticketBranchName}");
+            } else {
+                $this->shell->run("git checkout -b {$dto->ticketBranchName}");
+            }
 
             $result = $this->shell->runWithoutOutputAndError("git cherry-pick -x $dto->commitHashes");  // cherry-picking
 
@@ -49,7 +63,6 @@ class CherryPicker
 
             $this->shell->run("git push origin $dto->ticketBranchName"); // pushing
             $this->shell->run("git checkout $initialBranch");
-            $this->shell->run("git branch -D $dto->ticketBranchName"); // deleting
 
             if ($hasChangesToStash) $this->shell->runWithoutOutputAndError("git stash pop");
 
