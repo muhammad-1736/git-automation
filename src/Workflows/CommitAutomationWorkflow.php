@@ -11,6 +11,7 @@ use Mu\CherryPicker\TicketResolver;
 use function Laravel\Prompts\select;
 use function Laravel\Prompts\search;
 use function Laravel\Prompts\info;
+use function Laravel\Prompts\text;
 
 class CommitAutomationWorkflow
 {
@@ -82,6 +83,16 @@ class CommitAutomationWorkflow
         $featureOrBug = $ticketDetails['featureOrBug'];
         $titleMR      = $ticketDetails['titleMR'];
 
+        $extraCommitMessage = text(
+            label: 'Extra commit message',
+            placeholder: 'Optional'
+        );
+
+        $commitMessage = $titleMR;
+        if (!empty($extraCommitMessage)) {
+            $commitMessage .= ' > ' . $extraCommitMessage;
+        }
+
         $this->git->prepare();
 
         // Git checkout and branch flow
@@ -91,25 +102,29 @@ class CommitAutomationWorkflow
         $this->shell->run("git stash pop");
 
         $ticketBranchName = "$featureOrBug/$ticketNumber";
-        $this->shell->run("git checkout -b $ticketBranchName");
+        if ($currentBranch !== $ticketBranchName) {
+            $this->shell->run("git checkout -b $ticketBranchName");
+        }
 
         // Git add and commit with JIRA title
         $this->shell->run("git add .");
-        $this->shell->run("git commit -m " . escapeshellarg($titleMR));
+        $this->shell->run("git commit -m " . escapeshellarg($commitMessage));
 
         // Git push to origin
         $this->shell->run("git push origin $ticketBranchName");
 
         // Create Merge Request
-        $this->vcsProvider->createMergeRequest(
-            'px',
-            $ticketBranchName,
-            $currentBranch,
-            $titleMR,
-            '', // without description
-            config('cherry-picker.git.username'),
-            config('cherry-picker.git.mr_reviewer_name'),
-        );
+        if ($currentBranch !== $ticketBranchName) {
+            $this->vcsProvider->createMergeRequest(
+                'px',
+                $ticketBranchName,
+                $currentBranch,
+                $titleMR,
+                '', // without description
+                config('cherry-picker.git.username'),
+                config('cherry-picker.git.mr_reviewer_name'),
+            );
+        }
 
         info('✅ Commit Automation process completed successfully!');
     }
