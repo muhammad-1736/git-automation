@@ -12,6 +12,7 @@ use function Laravel\Prompts\select;
 use function Laravel\Prompts\search;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\text;
+use function Laravel\Prompts\textarea;
 
 class CommitAutomationWorkflow
 {
@@ -88,6 +89,11 @@ class CommitAutomationWorkflow
             placeholder: 'Optional'
         );
 
+        $commitDescription = textarea(
+            label: 'Commit description',
+            placeholder: 'Optional'
+        );
+
         $commitMessage = $titleMR;
         if (!empty($extraCommitMessage)) {
             $commitMessage .= ' > ' . $extraCommitMessage;
@@ -108,7 +114,12 @@ class CommitAutomationWorkflow
 
         // Git add and commit with JIRA title
         $this->shell->run("git add .");
-        $this->shell->run("git commit -m " . escapeshellarg($commitMessage));
+        
+        if (!empty($commitDescription)) {
+            $this->shell->run("git commit -m " . escapeshellarg($commitMessage) . " -m " . escapeshellarg($commitDescription));
+        } else {
+            $this->shell->run("git commit -m " . escapeshellarg($commitMessage));
+        }
 
         // Git push to origin
         $this->shell->run("git push origin $ticketBranchName");
