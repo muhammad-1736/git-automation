@@ -40,7 +40,6 @@ class CommitAutomationWorkflow
                     'mms' => 'mms',
                     'nzme' => 'nzme',
                     'outsd' => 'outsd',
-                    'platform' => 'platform',
                     'pris' => 'pris',
                     'pstm' => 'pstm',
                     'score' => 'score',
@@ -99,7 +98,9 @@ class CommitAutomationWorkflow
             $commitMessage .= ' > ' . $extraCommitMessage;
         }
 
-        $this->git->prepare();
+        $platform = ($platform === 'univision' ? 'uni' : $platform);
+        $groupName = $type === 'onboarding' ? $platform : 'px';
+        $this->git->prepare($groupName);
 
         // Git checkout and branch flow
         $currentBranch = $this->shell->runShellExec("git branch --show-current");
@@ -127,10 +128,10 @@ class CommitAutomationWorkflow
         // Create Merge Request
         if ($currentBranch !== $ticketBranchName) {
             $this->vcsProvider->createMergeRequest(
-                'px',
+                $groupName,
                 $ticketBranchName,
                 $currentBranch,
-                $titleMR,
+                $titleMR . ' ' . $extraCommitMessage,
                 '', // without description
                 config('cherry-picker.git.username'),
                 config('cherry-picker.git.mr_reviewer_name'),

@@ -17,7 +17,7 @@ class GitClient
         return $this->shell->runShellExec("git rev-parse --abbrev-ref HEAD");
     }
 
-    public function prepare(): void
+    public function prepare(string $groupName = 'px'): void
     {
         $vcs_pat = $this->vcs->getPAT();
         
@@ -25,6 +25,6 @@ class GitClient
         $this->shell->run("git config pull.rebase true");
         $this->shell->run('git config user.name "' . config('cherry-picker.git.username') . '"');
         $this->shell->run('git config user.email "' . config('cherry-picker.git.email') . '"');
-        $this->shell->run("git remote set-url origin https://oauth2:$vcs_pat@gitlab.da.local/px/platform.git");
+        $this->shell->run("git remote set-url origin https://oauth2:$vcs_pat@gitlab.da.local/{$groupName}/platform.git");
     }
 }
