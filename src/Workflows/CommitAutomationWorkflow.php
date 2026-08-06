@@ -9,7 +9,6 @@ use Mu\CherryPicker\Contracts\WMTProviderContract;
 use Mu\CherryPicker\Clients\ShellRunner;
 use Mu\CherryPicker\TicketResolver;
 use function Laravel\Prompts\select;
-use function Laravel\Prompts\search;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\text;
 use function Laravel\Prompts\textarea;
@@ -26,40 +25,7 @@ class CommitAutomationWorkflow
 
     public function execute(): void
     {
-        $platform = search(
-            label: 'Select platform',
-            options: function (string $value) {
-                $options = [
-                    'cbc' => 'cbc',
-                    'drl' => 'drl',
-                    'dwj' => 'dwj',
-                    'for' => 'for',
-                    'gmt' => 'gmt',
-                    'lprs' => 'lprs',
-                    'mjtv' => 'mjtv',
-                    'mms' => 'mms',
-                    'nzme' => 'nzme',
-                    'outsd' => 'outsd',
-                    'pris' => 'pris',
-                    'pstm' => 'pstm',
-                    'score' => 'score',
-                    'univision' => 'univision',
-                    'wimt' => 'wimt',
-                    'wlh' => 'wlh',
-                    'wpc' => 'wpc',
-                    'zlw' => 'zlw',
-                ];
-
-                if ($value === '') {
-                    return $options;
-                }
-
-                return array_filter(
-                    $options,
-                    fn ($option) => str_contains(strtolower($option), strtolower($value))
-                );
-            }
-        );
+        $platform = select_platform();
 
         $type = select(
             label: 'Select repository type',

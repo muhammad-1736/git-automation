@@ -12,6 +12,7 @@ use function Laravel\Prompts\note;
 use Mu\CherryPicker\CherryPicker;
 use Mu\CherryPicker\Contracts\WMTProviderContract;
 use Mu\CherryPicker\Workflows\CommitAutomationWorkflow;
+use Mu\CherryPicker\Workflows\PrepareLocalCodebaseWorkflow;
 use Mu\CherryPicker\TicketResolver;
 
 class CLIService
@@ -23,6 +24,7 @@ class CLIService
         private VCSProviderContract $vcsProvider,
         private CherryPicker $cherryPickService,
         private CommitAutomationWorkflow $commitAutomationWorkflow,
+        private PrepareLocalCodebaseWorkflow $prepareLocalCodebaseWorkflow,
     ) {}
 
     public function setOptions(array $options): void
@@ -37,12 +39,18 @@ class CLIService
         $workflowType = select(
             label: 'What do you want to do?',
             options: [
-                'merge_back_to_core' => 'Merge back to core',
-                'clone'              => 'Clone',
-                'commit_automation'  => 'Commit automation',
+                'prepare_local_codebase' => 'Prepare local codebase',
+                'merge_back_to_core'     => 'Merge back to core',
+                'clone'                  => 'Clone',
+                'commit_automation'      => 'Commit automation',
             ],
-            default: 'merge_back_to_core'
+            default: 'prepare_local_codebase'
         );
+
+        if ($workflowType === 'prepare_local_codebase') {
+            $this->prepareLocalCodebaseWorkflow->execute();
+            return;
+        }
 
         if ($workflowType === 'commit_automation') {
             $this->commitAutomationWorkflow->execute();
@@ -59,41 +67,8 @@ class CLIService
 
         // [START] Clone: get core fix version from composer.json
             if ($workflowType === 'clone') {
-                $refBranchName = get_release_or_hotfix_branch($fixVersion);
-
                 try {
-                    $ticketParts = explode('-', $ticketNumber);
-                    $prefix = strtoupper($ticketParts[0] ?? '');
-
-                    $groupName = match (true) {
-                        str_starts_with($prefix, 'SCOR')   => 'scr',
-                        str_starts_with($prefix, 'ZILLOW') => 'zlw',
-                        str_starts_with($prefix, 'UN')     => 'uni',
-                        str_starts_with($prefix, 'LP')     => 'lprs',
-                        str_starts_with($prefix, 'PM0')    => 'pstm',
-                        str_starts_with($prefix, 'OM')     => 'outsd',
-                        default                            => strtolower($prefix),
-                    };
-            
-                    $composerJsonContent = $this->vcsProvider->getFileContent($groupName, 'platform', 'composer.json', $refBranchName);
-
-                    $composerData = json_decode($composerJsonContent, true);
-
-                    if (!is_array($composerData)) {
-                        throw new \RuntimeException("Failed to parse composer.json as JSON.");
-                    }
-
-                    $sigmaCoreVersion = data_get($composerData, 'require.sigma/core');
-                    if (!$sigmaCoreVersion) {
-                        throw new \RuntimeException("Could not find require.sigma/core inside composer.json.");
-                    }
-
-                    // Strip 'dev-' prefix if present
-                    $cloneFixVersionBranchName = $sigmaCoreVersion;
-                    if (str_starts_with($sigmaCoreVersion, 'dev-')) {
-                        $cloneFixVersionBranchName = substr($sigmaCoreVersion, 4);
-                    }
-
+                    $cloneFixVersionBranchName = resolve_core_version($this->vcsProvider, $ticketNumber, $fixVersion);
                     \Laravel\Prompts\info("Successfully resolved core side branch from composer.json: {$cloneFixVersionBranchName}");
                 } catch (\Exception $e) {
                     error('Failed to retrieve or parse composer.json: ' . $e->getMessage());

@@ -113,3 +113,97 @@ if (!function_exists('get_release_or_hotfix_branch')) {
     }
 }
 
+if (!function_exists('select_platform')) {
+    /**
+     * Prompt user to select platform and return it.
+     *
+     * @return string
+     */
+    function select_platform(): string
+    {
+        return \Laravel\Prompts\search(
+            label: 'Select platform',
+            options: function (string $value) {
+                $options = [
+                    'cbc' => 'cbc',
+                    'drl' => 'drl',
+                    'dwj' => 'dwj',
+                    'for' => 'for',
+                    'gmt' => 'gmt',
+                    'lprs' => 'lprs',
+                    'mjtv' => 'mjtv',
+                    'mms' => 'mms',
+                    'nzme' => 'nzme',
+                    'outsd' => 'outsd',
+                    'pris' => 'pris',
+                    'pstm' => 'pstm',
+                    'score' => 'score',
+                    'univision' => 'univision',
+                    'wimt' => 'wimt',
+                    'wlh' => 'wlh',
+                    'wpc' => 'wpc',
+                    'zlw' => 'zlw',
+                ];
+
+                if ($value === '') {
+                    return $options;
+                }
+
+                return array_filter(
+                    $options,
+                    fn ($option) => str_contains(strtolower($option), strtolower($value))
+                );
+            }
+        );
+    }
+}
+
+if (!function_exists('resolve_core_version')) {
+    /**
+     * Resolve the core version from composer.json for a given ticket and fix version.
+     *
+     * @param \Mu\CherryPicker\Contracts\VCSProviderContract $vcsProvider
+     * @param string $ticketNumber
+     * @param string $fixVersion
+     * @return string
+     */
+    function resolve_core_version(\Mu\CherryPicker\Contracts\VCSProviderContract $vcsProvider, string $ticketNumber, string $fixVersion): string
+    {
+        $refBranchName = get_release_or_hotfix_branch($fixVersion);
+
+        $ticketParts = explode('-', $ticketNumber);
+        $prefix = strtoupper($ticketParts[0] ?? '');
+
+        $groupName = match (true) {
+            str_starts_with($prefix, 'SCOR')   => 'scr',
+            str_starts_with($prefix, 'ZILLOW') => 'zlw',
+            str_starts_with($prefix, 'UN')     => 'uni',
+            str_starts_with($prefix, 'LP')     => 'lprs',
+            str_starts_with($prefix, 'PM0')    => 'pstm',
+            str_starts_with($prefix, 'OM')     => 'outsd',
+            default                            => strtolower($prefix),
+        };
+
+        $composerJsonContent = $vcsProvider->getFileContent($groupName, 'platform', 'composer.json', $refBranchName);
+
+        $composerData = json_decode($composerJsonContent, true);
+
+        if (!is_array($composerData)) {
+            throw new \RuntimeException("Failed to parse composer.json as JSON.");
+        }
+
+        $sigmaCoreVersion = data_get($composerData, 'require.sigma/core');
+        if (!$sigmaCoreVersion) {
+            throw new \RuntimeException("Could not find require.sigma/core inside composer.json.");
+        }
+
+        // Strip 'dev-' prefix if present
+        $cloneFixVersionBranchName = $sigmaCoreVersion;
+        if (str_starts_with($sigmaCoreVersion, 'dev-')) {
+            $cloneFixVersionBranchName = substr($sigmaCoreVersion, 4);
+        }
+
+        return $cloneFixVersionBranchName;
+    }
+}
+

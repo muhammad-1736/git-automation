@@ -15,6 +15,7 @@ describe('CLIService', function () {
         $mockVcs = Mockery::mock(VCSProviderContract::class);
         $mockCherryPicker = Mockery::mock(CherryPicker::class);
         $mockCommitAutomation = Mockery::mock(CommitAutomationWorkflow::class);
+        $mockPrepareLocal = Mockery::mock(\Mu\CherryPicker\Workflows\PrepareLocalCodebaseWorkflow::class);
 
         // Mock WMT (Jira)
         $mockWmt->shouldReceive('getFeatureOrBug')->with('ZLW-231')->andReturn('feature');
@@ -57,7 +58,8 @@ describe('CLIService', function () {
         // 1. What do you want to do? -> select "clone" (we can simulate down arrow to select clone, or pass clone directly depending on Prompt::fake)
         // Let's use Prompt::fake with the exact text responses that Laravel Prompts expects
         Prompt::fake([
-            // select prompt (clone is 2nd option, so we do Key::DOWN, then Key::ENTER)
+            // select prompt (clone is 3rd option now, so we do Key::DOWN twice, then Key::ENTER)
+            Key::DOWN,
             Key::DOWN,
             Key::ENTER,
             // text prompt for ticket: ZLW-231
@@ -68,7 +70,7 @@ describe('CLIService', function () {
             Key::ENTER,
         ]);
 
-        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker, $mockCommitAutomation);
+        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker, $mockCommitAutomation, $mockPrepareLocal);
         $cliService->execute();
 
         expect(true)->toBeTrue(); // If we get here without exception, mock was called successfully!
@@ -79,6 +81,7 @@ describe('CLIService', function () {
         $mockVcs = Mockery::mock(VCSProviderContract::class);
         $mockCherryPicker = Mockery::mock(CherryPicker::class);
         $mockCommitAutomation = Mockery::mock(CommitAutomationWorkflow::class);
+        $mockPrepareLocal = Mockery::mock(\Mu\CherryPicker\Workflows\PrepareLocalCodebaseWorkflow::class);
 
         // Mock WMT (Jira)
         $mockWmt->shouldReceive('getFeatureOrBug')->with('SCOR-980')->andReturn('bugfix');
@@ -115,6 +118,8 @@ describe('CLIService', function () {
             ->once();
 
         Prompt::fake([
+            // select prompt (clone is 3rd option now, so we do Key::DOWN twice, then Key::ENTER)
+            Key::DOWN,
             Key::DOWN,
             Key::ENTER,
             'SCOR-980',
@@ -123,7 +128,7 @@ describe('CLIService', function () {
             Key::ENTER,
         ]);
 
-        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker, $mockCommitAutomation);
+        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker, $mockCommitAutomation, $mockPrepareLocal);
         $cliService->execute();
 
         expect(true)->toBeTrue();
@@ -134,17 +139,41 @@ describe('CLIService', function () {
         $mockVcs = Mockery::mock(VCSProviderContract::class);
         $mockCherryPicker = Mockery::mock(CherryPicker::class);
         $mockCommitAutomation = Mockery::mock(CommitAutomationWorkflow::class);
+        $mockPrepareLocal = Mockery::mock(\Mu\CherryPicker\Workflows\PrepareLocalCodebaseWorkflow::class);
 
         $mockCommitAutomation->shouldReceive('execute')
             ->once();
 
         Prompt::fake([
+            // select prompt (commit_automation is 4th option now, so we do Key::DOWN three times, then Key::ENTER)
+            Key::DOWN,
             Key::DOWN,
             Key::DOWN,
             Key::ENTER,
         ]);
 
-        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker, $mockCommitAutomation);
+        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker, $mockCommitAutomation, $mockPrepareLocal);
+        $cliService->execute();
+
+        expect(true)->toBeTrue();
+    });
+
+    it('executes prepare local codebase workflow when selected', function () {
+        $mockWmt = Mockery::mock(WMTProviderContract::class);
+        $mockVcs = Mockery::mock(VCSProviderContract::class);
+        $mockCherryPicker = Mockery::mock(CherryPicker::class);
+        $mockCommitAutomation = Mockery::mock(CommitAutomationWorkflow::class);
+        $mockPrepareLocal = Mockery::mock(\Mu\CherryPicker\Workflows\PrepareLocalCodebaseWorkflow::class);
+
+        $mockPrepareLocal->shouldReceive('execute')
+            ->once();
+
+        Prompt::fake([
+            // select prompt (prepare_local_codebase is 1st option now, so we just do Key::ENTER)
+            Key::ENTER,
+        ]);
+
+        $cliService = new CLIService($mockWmt, $mockVcs, $mockCherryPicker, $mockCommitAutomation, $mockPrepareLocal);
         $cliService->execute();
 
         expect(true)->toBeTrue();
