@@ -35,11 +35,11 @@ class PrepareLocalCodebaseWorkflow
         $ticketNumber = $ticketDetails['ticketNumber'];
         $fixVersion   = $ticketDetails['fixVersion'];
 
-        $refBranchName = get_release_or_hotfix_branch($fixVersion);
+        $onboardingBranchName = get_release_or_hotfix_branch($fixVersion);
 
         try {
-            $cloneFixVersionBranchName = resolve_core_version($this->vcsProvider, $ticketNumber, $fixVersion);
-            info("Successfully resolved core side branch from composer.json: {$cloneFixVersionBranchName}");
+            $coreBranchName = resolve_core_version($this->vcsProvider, $ticketNumber, $fixVersion);
+            info("Successfully resolved core side branch from composer.json: {$coreBranchName}");
         } catch (\Exception $e) {
             error('Failed to retrieve or parse composer.json: ' . $e->getMessage());
             exit(1);
@@ -53,22 +53,26 @@ class PrepareLocalCodebaseWorkflow
             $this->git->prepare($platformMapped);
             
             info("Fetching origin...");
-            $this->shell->run("git fetch origin");
+            $this->shell->run("git fetch origin " . escapeshellarg($onboardingBranchName));
 
             $statusOutput = $this->shell->runShellExec("git status --porcelain");
             $hasLocalChanges = !empty($statusOutput);
+            $stashed = false;
             if ($hasLocalChanges) {
                 info("Stashing local changes...");
-                $this->shell->run("git stash");
+                $stashOutput = $this->shell->runShellExec("git stash");
+                if (stripos($stashOutput, 'Saved working directory') !== false) {
+                    $stashed = true;
+                }
             }
 
-            info("Checking out branch {$refBranchName}...");
-            $this->shell->run("git checkout " . escapeshellarg($refBranchName));
+            info("Checking out branch {$onboardingBranchName}...");
+            $this->shell->run("git checkout " . escapeshellarg($onboardingBranchName));
             
             info("Pulling latest changes...");
-            $this->shell->run("git pull origin " . escapeshellarg($refBranchName));
+            $this->shell->run("git pull origin " . escapeshellarg($onboardingBranchName));
 
-            if ($hasLocalChanges) {
+            if ($stashed) {
                 info("Popping stashed changes...");
                 $this->shell->run("git stash pop");
             }
@@ -99,22 +103,26 @@ class PrepareLocalCodebaseWorkflow
             $this->git->prepare('px');
 
             info("Fetching origin...");
-            $this->shell->run("git fetch origin");
+            $this->shell->run("git fetch origin " . escapeshellarg($coreBranchName));
 
             $statusOutput = $this->shell->runShellExec("git status --porcelain");
             $hasLocalChanges = !empty($statusOutput);
+            $stashed = false;
             if ($hasLocalChanges) {
                 info("Stashing local changes...");
-                $this->shell->run("git stash");
+                $stashOutput = $this->shell->runShellExec("git stash");
+                if (stripos($stashOutput, 'Saved working directory') !== false) {
+                    $stashed = true;
+                }
             }
 
-            info("Checking out branch {$cloneFixVersionBranchName}...");
-            $this->shell->run("git checkout " . escapeshellarg($cloneFixVersionBranchName));
+            info("Checking out branch {$coreBranchName}...");
+            $this->shell->run("git checkout " . escapeshellarg($coreBranchName));
 
             info("Pulling latest changes...");
-            $this->shell->run("git pull origin " . escapeshellarg($cloneFixVersionBranchName));
+            $this->shell->run("git pull origin " . escapeshellarg($coreBranchName));
 
-            if ($hasLocalChanges) {
+            if ($stashed) {
                 info("Popping stashed changes...");
                 $this->shell->run("git stash pop");
             }
