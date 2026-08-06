@@ -189,3 +189,37 @@ describe('get_release_or_hotfix_branch', function () {
     });
 });
 
+describe('resolve_core_version', function () {
+    it('successfully resolves core side branch from composer.json', function () {
+        $mockVcs = Mockery::mock(\Mu\CherryPicker\Contracts\VCSProviderContract::class);
+        $composerJsonContent = json_encode([
+            'require' => [
+                'sigma/core' => 'dev-platform/13.2.0/scr'
+            ]
+        ]);
+        $mockVcs->shouldReceive('getFileContent')
+            ->with('zlw', 'platform', 'composer.json', 'release/13.2.0')
+            ->once()
+            ->andReturn($composerJsonContent);
+
+        $resolved = resolve_core_version($mockVcs, 'ZLW-231', '13.2.0');
+        expect($resolved)->toBe('platform/13.2.0/scr');
+    });
+
+    it('throws RuntimeException when core side dependency is missing in composer.json', function () {
+        $mockVcs = Mockery::mock(\Mu\CherryPicker\Contracts\VCSProviderContract::class);
+        $composerJsonContent = json_encode([
+            'require' => [
+                'some/other-dependency' => '1.0.0'
+            ]
+        ]);
+        $mockVcs->shouldReceive('getFileContent')
+            ->with('zlw', 'platform', 'composer.json', 'release/13.2.0')
+            ->once()
+            ->andReturn($composerJsonContent);
+
+        expect(fn () => resolve_core_version($mockVcs, 'ZLW-231', '13.2.0'))
+            ->toThrow(\RuntimeException::class, "Could not find require.sigma/core inside composer.json.");
+    });
+}); 
+
