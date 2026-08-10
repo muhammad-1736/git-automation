@@ -70,9 +70,14 @@ class CommitAutomationWorkflow
 
         // Git checkout and branch flow
         $currentBranch = $this->shell->runShellExec("git branch --show-current");
-        $this->shell->run("git stash");
+        $hasChangesToStash = !empty($this->shell->runShellExec("git status --porcelain -uno"));
+        if ($hasChangesToStash) {
+            $this->shell->run("git stash");
+        }
         $this->shell->run("git pull origin $currentBranch");
-        $this->shell->run("git stash pop");
+        if ($hasChangesToStash) {
+            $this->shell->run("git stash pop");
+        }
 
         $ticketBranchName = "$featureOrBug/$ticketNumber";
         if ($currentBranch !== $ticketBranchName) {
@@ -81,6 +86,14 @@ class CommitAutomationWorkflow
 
         // Git add and commit with JIRA title
         $this->shell->run("git add .");
+
+        $excludedPaths = config('cherry-picker.git.excluded_from_commit', []);
+        foreach ($excludedPaths as $excludedPath) {
+            $excludedPath = trim($excludedPath);
+            if (!empty($excludedPath)) {
+                $this->shell->runWithoutOutputAndError("git reset HEAD " . escapeshellarg($excludedPath));
+            }
+        }
         
         if (!empty($commitDescription)) {
             $this->shell->run("git commit -m " . escapeshellarg($commitMessage) . " -m " . escapeshellarg($commitDescription));
@@ -97,7 +110,7 @@ class CommitAutomationWorkflow
                 $groupName,
                 $ticketBranchName,
                 $currentBranch,
-                $titleMR . ' ' . $extraCommitMessage,
+                $titleMR . ' > ' . $extraCommitMessage,
                 '', // without description
                 config('cherry-picker.git.username'),
                 config('cherry-picker.git.mr_reviewer_name'),
