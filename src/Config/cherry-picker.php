@@ -6,6 +6,7 @@ return [
         'email'               => (string) env('GIT_EMAIL', 'muhammadumar.sotvoldiev@danads.se'),
         'mr_reviewer_name'    => (string) env('GIT_MR_REVIEWER_NAME', 'bohdan.bondar'),
         'path_to_root_folder' => (string) env('GIT_PATH_TO_ROOT_FOLDER'),
+        'excluded_from_commit' => explode(',', (string) env('GIT_EXCLUDED_FROM_COMMIT', '.codegraph')),
     ],
     'gitlab' => [
         'personal_access_token' => (string) env('PERSONAL_TOKEN'),
