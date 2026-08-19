@@ -158,6 +158,30 @@ if (!function_exists('select_platform')) {
     }
 }
 
+if (!function_exists('resolve_gitlab_group')) {
+    /**
+     * Resolve the GitLab group name from a Jira ticket number.
+     *
+     * @param string $ticketNumber
+     * @return string
+     */
+    function resolve_gitlab_group(string $ticketNumber): string
+    {
+        $ticketParts = explode('-', $ticketNumber);
+        $prefix = strtoupper($ticketParts[0] ?? '');
+
+        return match (true) {
+            str_starts_with($prefix, 'SCOR')   => 'scr',
+            str_starts_with($prefix, 'ZILLOW') => 'zlw',
+            str_starts_with($prefix, 'UN')     => 'uni',
+            str_starts_with($prefix, 'LP')     => 'lprs',
+            str_starts_with($prefix, 'PM0')    => 'pstm',
+            str_starts_with($prefix, 'OM')     => 'outsd',
+            default                            => strtolower($prefix),
+        };
+    }
+}
+
 if (!function_exists('resolve_core_version')) {
     /**
      * Resolve the core version from composer.json for a given ticket and fix version.
@@ -171,18 +195,7 @@ if (!function_exists('resolve_core_version')) {
     {
         $refBranchName = get_release_or_hotfix_branch($fixVersion);
 
-        $ticketParts = explode('-', $ticketNumber);
-        $prefix = strtoupper($ticketParts[0] ?? '');
-
-        $groupName = match (true) {
-            str_starts_with($prefix, 'SCOR')   => 'scr',
-            str_starts_with($prefix, 'ZILLOW') => 'zlw',
-            str_starts_with($prefix, 'UN')     => 'uni',
-            str_starts_with($prefix, 'LP')     => 'lprs',
-            str_starts_with($prefix, 'PM0')    => 'pstm',
-            str_starts_with($prefix, 'OM')     => 'outsd',
-            default                            => strtolower($prefix),
-        };
+        $groupName = resolve_gitlab_group($ticketNumber);
 
         $composerJsonContent = $vcsProvider->getFileContent($groupName, 'platform', 'composer.json', $refBranchName);
 

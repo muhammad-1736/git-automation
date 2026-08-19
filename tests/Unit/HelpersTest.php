@@ -221,5 +221,17 @@ describe('resolve_core_version', function () {
         expect(fn () => resolve_core_version($mockVcs, 'ZLW-231', '13.2.0'))
             ->toThrow(\RuntimeException::class, "Could not find require.sigma/core inside composer.json.");
     });
+});
+
+describe('resolve_gitlab_group', function () {
+    it('correctly maps various ticket prefixes to group names', function () {
+        expect(resolve_gitlab_group('SCOR-123'))->toBe('scr');
+        expect(resolve_gitlab_group('ZILLOW-456'))->toBe('zlw');
+        expect(resolve_gitlab_group('UN-789'))->toBe('uni');
+        expect(resolve_gitlab_group('LP-101'))->toBe('lprs');
+        expect(resolve_gitlab_group('PM0-202'))->toBe('pstm');
+        expect(resolve_gitlab_group('OM-303'))->toBe('outsd');
+        expect(resolve_gitlab_group('CUSTOM-999'))->toBe('custom');
+    });
 }); 
 
