@@ -178,4 +178,37 @@ describe('CLIService', function () {
 
         expect(true)->toBeTrue();
     });
+
+    it('executes clean old branches workflow when selected', function () {
+        $mockWmt = Mockery::mock(WMTProviderContract::class);
+        $mockVcs = Mockery::mock(VCSProviderContract::class);
+        $mockCherryPicker = Mockery::mock(CherryPicker::class);
+        $mockCommitAutomation = Mockery::mock(CommitAutomationWorkflow::class);
+        $mockPrepareLocal = Mockery::mock(\Mu\CherryPicker\Workflows\PrepareLocalCodebaseWorkflow::class);
+        $mockCleanOldBranches = Mockery::mock(\Mu\CherryPicker\Workflows\CleanOldBranchesWorkflow::class);
+
+        $mockCleanOldBranches->shouldReceive('execute')
+            ->once();
+
+        Prompt::fake([
+            // select prompt (clean_old_branches is 5th option, so we do Key::DOWN 4 times, then Key::ENTER)
+            Key::DOWN,
+            Key::DOWN,
+            Key::DOWN,
+            Key::DOWN,
+            Key::ENTER,
+        ]);
+
+        $cliService = new CLIService(
+            $mockWmt,
+            $mockVcs,
+            $mockCherryPicker,
+            $mockCommitAutomation,
+            $mockPrepareLocal,
+            $mockCleanOldBranches
+        );
+        $cliService->execute();
+
+        expect(true)->toBeTrue();
+    });
 });
