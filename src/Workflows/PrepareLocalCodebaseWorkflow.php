@@ -42,9 +42,7 @@ class PrepareLocalCodebaseWorkflow
             default: 'fix_version',
         );
 
-        $isJiraTicket = in_array($option, ['jira_ticket', '2', 2, '2. Input jira ticket', '2. input jira ticket', 'Input jira ticket', 'input jira ticket'], true);
-
-        if ($isJiraTicket) {
+        if ($option === 'jira_ticket') {
             // 3. Ask for Jira ticket details and resolve core version
             $ticketDetails = TicketResolver::resolve($this->wmtProvider);
             $ticketNumber = $ticketDetails['ticketNumber'];
@@ -75,10 +73,10 @@ class PrepareLocalCodebaseWorkflow
         // 4. Onboarding platform repo work
         info("Preparing platform codebase at: {$path}");
         $this->configLoader->set('cherry-picker.git.path_to_root_folder', $path);
-        
+
         try {
             $this->git->prepare($platformMapped);
-            
+
             info("Fetching origin...");
             $this->shell->run("git fetch origin " . escapeshellarg($onboardingBranchName));
 
@@ -95,7 +93,7 @@ class PrepareLocalCodebaseWorkflow
 
             info("Checking out branch {$onboardingBranchName}...");
             $this->shell->run("git checkout " . escapeshellarg($onboardingBranchName));
-            
+
             info("Pulling latest changes...");
             $this->shell->run("git pull origin " . escapeshellarg($onboardingBranchName));
 
