@@ -11,6 +11,8 @@ use Mu\CherryPicker\TicketResolver;
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\warning;
+use function Laravel\Prompts\select;
+use function Laravel\Prompts\text;
 
 class PrepareLocalCodebaseWorkflow
 {
@@ -31,22 +33,44 @@ class PrepareLocalCodebaseWorkflow
         // 2. Map platform for gitlab px/uni mapping after setting path
         $platformMapped = ($platform === 'univision' ? 'uni' : $platform);
 
-        // 3. Ask for Jira ticket details and resolve core version
-        $ticketDetails = TicketResolver::resolve($this->wmtProvider);
-        $ticketNumber = $ticketDetails['ticketNumber'];
-        $fixVersion   = $ticketDetails['fixVersion'];
+        $option = select(
+            label: 'Select option',
+            options: [
+                'fix_version' => '1. Input fix version',
+                'jira_ticket' => '2. Input jira ticket',
+            ],
+            default: 'fix_version',
+        );
+
+        $isJiraTicket = in_array($option, ['jira_ticket', '2', 2, '2. Input jira ticket', '2. input jira ticket', 'Input jira ticket', 'input jira ticket'], true);
+
+        if ($isJiraTicket) {
+            // 3. Ask for Jira ticket details and resolve core version
+            $ticketDetails = TicketResolver::resolve($this->wmtProvider);
+            $ticketNumber = $ticketDetails['ticketNumber'];
+            $fixVersion   = $ticketDetails['fixVersion'];
+            $targetGroup  = null;
+        } else {
+            $fixVersion = text(
+                label: 'Please provide the fixVersion (e.g. 12.0.1)',
+                placeholder: '12.0.1',
+                required: true
+            );
+            $ticketNumber = null;
+            $targetGroup  = $platformMapped;
+        }
 
         $onboardingBranchName = get_release_or_hotfix_branch($fixVersion);
 
         try {
-            $coreBranchName = resolve_core_version($this->vcsProvider, $ticketNumber, $fixVersion);
+            $coreBranchName = resolve_core_version($this->vcsProvider, $ticketNumber, $fixVersion, $targetGroup);
             info("Successfully resolved core side branch from composer.json: {$coreBranchName}");
         } catch (\Exception $e) {
             error('Failed to retrieve or parse composer.json: ' . $e->getMessage());
             exit(1);
         }
 
-        $this->compareDockerfiles($platform, $ticketNumber, $fixVersion);
+        $this->compareDockerfiles($platform, $ticketNumber, $fixVersion, $targetGroup);
 
         // 4. Onboarding platform repo work
         info("Preparing platform codebase at: {$path}");
@@ -78,19 +102,6 @@ class PrepareLocalCodebaseWorkflow
             if ($stashed) {
                 info("Popping stashed changes...");
                 $this->shell->run("git stash pop");
-            }
-
-            // Delete existing (feature|bugfix)/ticketNumber local branch
-            $branchesToDelete = [
-                "feature/{$ticketNumber}",
-                "bugfix/{$ticketNumber}"
-            ];
-            foreach ($branchesToDelete as $branchToDelete) {
-                $branchExists = $this->shell->runShellExec("git branch --list " . escapeshellarg($branchToDelete));
-                if (!empty($branchExists)) {
-                    info("Deleting local branch {$branchToDelete}...");
-                    $this->shell->run("git branch -D " . escapeshellarg($branchToDelete));
-                }
             }
         } catch (\Exception $e) {
             error("Error during platform repository preparation: " . $e->getMessage());
@@ -129,15 +140,6 @@ class PrepareLocalCodebaseWorkflow
                 info("Popping stashed changes...");
                 $this->shell->run("git stash pop");
             }
-
-            // Delete existing (feature|bugfix)/ticketNumber local branch
-            foreach ($branchesToDelete as $branchToDelete) {
-                $branchExists = $this->shell->runShellExec("git branch --list " . escapeshellarg($branchToDelete));
-                if (!empty($branchExists)) {
-                    info("Deleting local branch {$branchToDelete}...");
-                    $this->shell->run("git branch -D " . escapeshellarg($branchToDelete));
-                }
-            }
         } catch (\Exception $e) {
             error("Error during core repository preparation: " . $e->getMessage());
             exit(1);
@@ -150,11 +152,12 @@ class PrepareLocalCodebaseWorkflow
      * Compare local phpfpm.Dockerfile FROM line with VCS GitLab version
      *
      * @param string $platform
-     * @param string $ticketNumber
+     * @param string|null $ticketNumber
      * @param string $fixVersion
+     * @param string|null $groupName
      * @return void
      */
-    public function compareDockerfiles(string $platform, string $ticketNumber, string $fixVersion): void
+    public function compareDockerfiles(string $platform, ?string $ticketNumber, string $fixVersion, ?string $groupName = null): void
     {
         $path = "/home/xmsi/documents/{$platform}";
         $onboardingBranchName = get_release_or_hotfix_branch($fixVersion);
@@ -162,7 +165,11 @@ class PrepareLocalCodebaseWorkflow
         $localDockerfilePath = "{$path}/infrastructure/docker/phpfpm.Dockerfile";
         $localContent = file_exists($localDockerfilePath) ? file_get_contents($localDockerfilePath) : null;
 
-        $groupName = resolve_gitlab_group($ticketNumber);
+        if ($groupName === null) {
+            $groupName = !empty($ticketNumber)
+                ? resolve_gitlab_group($ticketNumber)
+                : ($platform === 'univision' ? 'uni' : $platform);
+        }
 
         try {
             $vcsContent = $this->vcsProvider->getFileContent(

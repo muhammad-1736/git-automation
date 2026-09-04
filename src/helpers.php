@@ -187,15 +187,18 @@ if (!function_exists('resolve_core_version')) {
      * Resolve the core version from composer.json for a given ticket and fix version.
      *
      * @param \Mu\CherryPicker\Contracts\VCSProviderContract $vcsProvider
-     * @param string $ticketNumber
+     * @param string|null $ticketNumber
      * @param string $fixVersion
+     * @param string|null $groupName
      * @return string
      */
-    function resolve_core_version(\Mu\CherryPicker\Contracts\VCSProviderContract $vcsProvider, string $ticketNumber, string $fixVersion): string
+    function resolve_core_version(\Mu\CherryPicker\Contracts\VCSProviderContract $vcsProvider, ?string $ticketNumber, string $fixVersion, ?string $groupName = null): string
     {
         $refBranchName = get_release_or_hotfix_branch($fixVersion);
 
-        $groupName = resolve_gitlab_group($ticketNumber);
+        if ($groupName === null) {
+            $groupName = !empty($ticketNumber) ? resolve_gitlab_group($ticketNumber) : '';
+        }
 
         $composerJsonContent = $vcsProvider->getFileContent($groupName, 'platform', 'composer.json', $refBranchName);
 

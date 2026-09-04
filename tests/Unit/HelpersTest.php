@@ -221,6 +221,22 @@ describe('resolve_core_version', function () {
         expect(fn () => resolve_core_version($mockVcs, 'ZLW-231', '13.2.0'))
             ->toThrow(\RuntimeException::class, "Could not find require.sigma/core inside composer.json.");
     });
+
+    it('successfully resolves core side branch using explicit group name without ticket', function () {
+        $mockVcs = Mockery::mock(\Mu\CherryPicker\Contracts\VCSProviderContract::class);
+        $composerJsonContent = json_encode([
+            'require' => [
+                'sigma/core' => 'dev-platform/13.2.0/scr'
+            ]
+        ]);
+        $mockVcs->shouldReceive('getFileContent')
+            ->with('gmt', 'platform', 'composer.json', 'release/13.2.0')
+            ->once()
+            ->andReturn($composerJsonContent);
+
+        $resolved = resolve_core_version($mockVcs, null, '13.2.0', 'gmt');
+        expect($resolved)->toBe('platform/13.2.0/scr');
+    });
 });
 
 describe('resolve_gitlab_group', function () {
