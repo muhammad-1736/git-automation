@@ -45,10 +45,10 @@ class CLIService
             options: [
                 'prepare_local_codebase' => 'Prepare local codebase',
                 'commit_automation'      => 'Commit automation',
-                'clone'                  => 'Clone',
-                'merge_back_to_core'     => 'Merge back to core',
                 'clean_old_branches'     => 'Clean old branches',
                 'update_core_dependency' => 'Update core dependency in composer',
+                'clone'                  => 'Clone',
+                'merge_back_to_core'     => 'Merge back to core',
             ],
             default: 'prepare_local_codebase'
         );
