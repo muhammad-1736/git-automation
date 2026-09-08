@@ -53,7 +53,19 @@ It also compares local Dockerfile (`phpfpm.Dockerfile`) base images with GitLab 
   1. Prompts for platform and ticket number.
   2. Checks for and forcefully deletes local `feature/{ticket}` and `bugfix/{ticket}` branches from both the platform repository and the core repository (`vendor/sigma/core`).
 
-### 4. Cherry Pick (`clone`)
+### 4. Update Core Dependency in Composer (`update_core_dependency`)
+- **Why we need it:** Directly update `sigma/core` dependency branch and commit hash in `composer.json` and `composer.lock` without running a slow or breaking composer update.
+- **How it works:**
+  1. Prompts for platform using `select_platform()`.
+  2. Prompts for branch name (e.g. `platform/7.4.3/drl`).
+  3. Prompts for commit hash (e.g. `3bafb744b83a9144cab895ec8fc4d80bb4a1aa56`).
+  4. Updates `require."sigma/core"` in `composer.json` to `"dev-{branch}"`.
+  5. Updates package `"sigma/core"` in `composer.lock`:
+     - `version` to `"dev-{branch}"`
+     - `source.reference` to the provided commit hash
+     - `time` to the current UTC timestamp (`Y-m-d\TH:i:s+00:00`).
+
+### 5. Cherry Pick (`clone`)
 Automates backporting commits from one branch to another or across projects.
 
 1. **Preparation**
