@@ -14,6 +14,7 @@ use Mu\CherryPicker\Contracts\WMTProviderContract;
 use Mu\CherryPicker\Workflows\CommitAutomationWorkflow;
 use Mu\CherryPicker\Workflows\PrepareLocalCodebaseWorkflow;
 use Mu\CherryPicker\Workflows\CleanOldBranchesWorkflow;
+use Mu\CherryPicker\Workflows\UpdateCoreDependencyWorkflow;
 use Mu\CherryPicker\TicketResolver;
 
 class CLIService
@@ -26,7 +27,8 @@ class CLIService
         private CherryPicker $cherryPickService,
         private CommitAutomationWorkflow $commitAutomationWorkflow,
         private PrepareLocalCodebaseWorkflow $prepareLocalCodebaseWorkflow,
-        private ?CleanOldBranchesWorkflow $cleanOldBranchesWorkflow = null,
+        private CleanOldBranchesWorkflow $cleanOldBranchesWorkflow,
+        private UpdateCoreDependencyWorkflow $updateCoreDependencyWorkflow,
     ) {}
 
     public function setOptions(array $options): void
@@ -46,6 +48,7 @@ class CLIService
                 'clone'                  => 'Clone',
                 'merge_back_to_core'     => 'Merge back to core',
                 'clean_old_branches'     => 'Clean old branches',
+                'update_core_dependency' => 'Update core dependency in composer',
             ],
             default: 'prepare_local_codebase'
         );
@@ -61,7 +64,12 @@ class CLIService
         }
 
         if ($workflowType === 'clean_old_branches') {
-            $this->cleanOldBranchesWorkflow?->execute();
+            $this->cleanOldBranchesWorkflow->execute();
+            return;
+        }
+
+        if ($workflowType === 'update_core_dependency') {
+            $this->updateCoreDependencyWorkflow->execute();
             return;
         }
 
