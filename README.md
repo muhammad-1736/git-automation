@@ -65,7 +65,16 @@ It also compares local Dockerfile (`phpfpm.Dockerfile`) base images with GitLab 
      - `source.reference` to the provided commit hash
      - `time` to the current UTC timestamp (`Y-m-d\TH:i:s+00:00`).
 
-### 5. Cherry Pick (`clone`)
+### 5. Update Current Branch in composer.lock (`update_current_branch`)
+- **Why we need it:** Update the commit hash and timestamp of `sigma/core` directly in `composer.lock` without prompting for or modifying the branch name, and without touching `composer.json`.
+- **How it works:**
+  1. Prompts for platform using `select_platform()`.
+  2. Prompts for commit hash (e.g. `3bafb744b83a9144cab895ec8fc4d80bb4a1aa56`).
+  3. Updates package `"sigma/core"` in `composer.lock` only:
+     - `source.reference` to the provided commit hash
+     - `time` to the current UTC timestamp (`Y-m-d\TH:i:s+00:00`).
+
+### 6. Cherry Pick (`clone`)
 Automates backporting commits from one branch to another or across projects.
 
 1. **Preparation**
