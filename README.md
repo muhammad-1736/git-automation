@@ -1,6 +1,6 @@
 # Auto Git Flow with WMT (Jira) and VCS (GitLab) integrations
 
-Language agnostic package for automated Git Flow with WMT (Work Management Tool - Jira) and VCS (Version Control System - GitLab) integrations for team work. Can be usefull to backport changes to branches, clone fixes or features to separate projects. This package streamlines the process of cherry-picking commits across branches, automatically creating merge requests with proper metadata from WMT tickets (Jira).
+Language-independent package for automated Git Flow with WMT (Work Management Tool, Jira) and VCS (Version Control System, GitLab) integrations for teamwork. Can be useful to backport changes to branches, clone fixes or features to separate projects. This package streamlines the process of cherry-picking commits across branches, automatically creating merge requests with proper metadata from WMT tickets (Jira).
 
 [Demo video and presentation link](https://docs.google.com/presentation/d/1Ml6Oe2MLj1rt9jNuCKSDl3zp5pIaQIqUMb8pnTqHdVM/edit?usp=sharing)
 
@@ -30,7 +30,7 @@ Please read [QUICKSTART.md](QUICKSTART.md)
 The tool offers an interactive CLI menu to execute any of the following workflows:
 
 ### 1. Local Codebase Preparation (`prepare_local_codebase`)
-- **Why we need it:** Prepares and synchronizes your local platform git repository and core repository (`vendor/sigma/core`) to the fresh target branches from remote VCS matching the ticket's `fixVersion`. 
+- **Why we need it:** Prepares and synchronises your local platform git repository and core repository (`vendor/sigma/core`) to the fresh target branches from remote VCS matching the ticket's `fixVersion`. 
 It also compares local Dockerfile (`phpfpm.Dockerfile`) base images with GitLab VCS to warn if **re-dockerization** is required.
 - **How it works:**
   1. Prompts for platform.
@@ -48,13 +48,13 @@ It also compares local Dockerfile (`phpfpm.Dockerfile`) base images with GitLab 
   4. Commits with Jira title/description, pushes to remote GitLab, and creates a Merge Request.
 
 ### 3. Clean Old Branches (`clean_old_branches`)
-- **When to call it:** Call this when an MR was merged and branches were deleted from GitLab remote, and you need to clean up stale local branches or recreate them from scratch.
+- **When to call it:** Call this when an MR was merged, branches were deleted from the GitLab remote, and you need to clean up stale local branches or recreate them from scratch.
 - **How it works:**
   1. Prompts for platform and ticket number.
   2. Checks for and forcefully deletes local `feature/{ticket}` and `bugfix/{ticket}` branches from both the platform repository and the core repository (`vendor/sigma/core`).
 
 ### 4. Update Core Dependency in Composer (`update_core_dependency`)
-- **Why we need it:** Directly update `sigma/core` dependency branch and commit hash in `composer.json` and `composer.lock` without running a slow or breaking composer update.
+- **Why we need it:** Directly update the `sigma/core` dependency branch and commit hash in `composer.json` and `composer.lock` without running a slow or breaking composer update.
 - **How it works:**
   1. Prompts for platform using `select_platform()`.
   2. Prompts for branch name (e.g. `platform/7.4.3/drl`).
