@@ -88,7 +88,7 @@ class CherryPicker
 
         \Laravel\Prompts\info('Resuming... Stage the resolved files and continuing cherry-pick.');
 
-        $this->shell->runWithoutOutputAndError('git add .');
+        $this->git->stageAll();
         $resume = $this->shell->runWithoutOutputAndError('git cherry-pick --continue');
 
         if ($resume['exit_code'] === 0) {

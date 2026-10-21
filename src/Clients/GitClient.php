@@ -28,4 +28,15 @@ class GitClient
         $this->shell->run('git config user.email "' . config('cherry-picker.git.email') . '"');
         $this->shell->run("git remote set-url origin https://oauth2:$vcs_pat@gitlab.da.local/{$groupName}/platform.git");
     }
+
+    /** `git add .` minus the paths listed in cherry-picker.git.excluded_from_commit. */
+    public function stageAll(): void
+    {
+        $this->shell->runWithoutOutputAndError('git add .');
+        foreach (config('cherry-picker.git.excluded_from_commit', []) as $path) {
+            if (trim($path) !== '') {
+                $this->shell->runWithoutOutputAndError('git reset HEAD ' . escapeshellarg(trim($path)));
+            }
+        }
+    }
 }

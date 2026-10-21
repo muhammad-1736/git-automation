@@ -16,6 +16,7 @@ use Mu\CherryPicker\Workflows\PrepareLocalCodebaseWorkflow;
 use Mu\CherryPicker\Workflows\CleanOldBranchesWorkflow;
 use Mu\CherryPicker\Workflows\UpdateCoreDependencyWorkflow;
 use Mu\CherryPicker\Workflows\UpdateCurrentBranchWorkflow;
+use Mu\CherryPicker\Workflows\MyMergeRequestsWorkflow;
 use Mu\CherryPicker\TicketResolver;
 
 class CLIService
@@ -31,6 +32,7 @@ class CLIService
         private CleanOldBranchesWorkflow $cleanOldBranchesWorkflow,
         private UpdateCoreDependencyWorkflow $updateCoreDependencyWorkflow,
         private UpdateCurrentBranchWorkflow $updateCurrentBranchWorkflow,
+        private MyMergeRequestsWorkflow $myMergeRequestsWorkflow,
     ) {}
 
     public function setOptions(array $options): void
@@ -45,6 +47,7 @@ class CLIService
         $workflowType = select(
             label: 'What do you want to do?',
             options: [
+		        'my_merge_requests'      => 'My merge requests (review / rerun CI)',
                 'prepare_local_codebase' => 'Prepare local codebase',
                 'commit_automation'      => 'Commit automation',
                 'clean_old_branches'     => 'Clean old branches',
@@ -53,7 +56,7 @@ class CLIService
                 'clone'                  => 'Clone',
                 'merge_back_to_core'     => 'Merge back to core',
             ],
-            default: 'prepare_local_codebase'
+            default: 'my_merge_requests'
         );
 
         if ($workflowType === 'prepare_local_codebase') {
@@ -73,6 +76,11 @@ class CLIService
 
         if ($workflowType === 'update_core_dependency') {
             $this->updateCoreDependencyWorkflow->execute();
+            return;
+        }
+
+        if ($workflowType === 'my_merge_requests') {
+            $this->myMergeRequestsWorkflow->execute();
             return;
         }
 
@@ -150,7 +158,8 @@ class CLIService
 
     private function option(string $key): mixed
     {
-        return $this->options[$key] ?? null;
+        // getopt() returns false for value-less flags.
+        return array_key_exists($key, $this->options) ? ($this->options[$key] ?: true) : null;
     }
 
 

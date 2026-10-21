@@ -245,4 +245,55 @@ class GitLabClient implements VCSProviderContract
             throw new \RuntimeException("Failed to fetch file content from GitLab: " . $e->getMessage(), 0, $e);
         }
     }
+
+    /**
+     * Open MRs assigned to the configured user, each with its head pipeline status.
+     *
+     * @return array<int, array{project_id:int, iid:int, title:string, url:string, pipeline:?string, jenkins:int}>
+     * @throws GuzzleException
+     */
+    public function getAssignedMergeRequests(): array
+    {
+        $apiBaseUrl = config('cherry-picker.gitlab.api_url');
+        $options = ['headers' => ['PRIVATE-TOKEN' => $this->getPAT()]];
+
+        $list = json_decode($this->client->get("$apiBaseUrl/merge_requests", $options + ['query' => [
+            'scope' => 'all',
+            'state' => 'opened',
+            'wip' => 'no', // excludes drafts
+            'assignee_username' => config('cherry-picker.gitlab.mr_assignee_username'),
+            'per_page' => 50,
+        ]])->getBody()->getContents(), true);
+
+        $mrs = [];
+        foreach ($list as $mr) {
+            // head_pipeline is only present on the single-MR endpoint
+            $full = json_decode($this->client->get(
+                "$apiBaseUrl/projects/{$mr['project_id']}/merge_requests/{$mr['iid']}",
+                $options
+            )->getBody()->getContents(), true);
+
+            $mrs[] = [
+                'project_id' => $mr['project_id'],
+                'iid' => $mr['iid'],
+                'title' => $mr['title'],
+                'url' => $mr['web_url'],
+                'pipeline' => $full['head_pipeline']['status'] ?? null,
+                'jenkins' => substr_count((string) $mr['description'], 'Jenkins!'),
+            ];
+        }
+
+        return $mrs;
+    }
+
+    /**
+     * @throws GuzzleException
+     */
+    public function addMergeRequestNote(int $projectId, int $mrIid, string $body): void
+    {
+        $this->client->post(
+            config('cherry-picker.gitlab.api_url') . "/projects/$projectId/merge_requests/$mrIid/notes",
+            ['headers' => ['PRIVATE-TOKEN' => $this->getPAT()], 'json' => ['body' => $body]]
+        );
+    }
 }

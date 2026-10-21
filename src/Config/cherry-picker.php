@@ -11,6 +11,8 @@ return [
     'gitlab' => [
         'personal_access_token' => (string) env('PERSONAL_TOKEN'),
         'api_url'               => (string) env('GITLAB_API_URL'),
+        'mr_assignee_username'  => (string) env('GITLAB_MR_ASSIGNEE_USERNAME', 'YOU'),
+        'review_mention'        => (string) env('REVIEW_MENTION', '@LEAD'),
     ],
     'jira'   => [
         'email'                 => (string) env('JIRA_EMAIL'),

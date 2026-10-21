@@ -177,6 +177,7 @@ if (!function_exists('resolve_gitlab_group')) {
             str_starts_with($prefix, 'LP')     => 'lprs',
             str_starts_with($prefix, 'PM0')    => 'pstm',
             str_starts_with($prefix, 'OM')     => 'outsd',
+            str_starts_with($prefix, 'COR')    => 'corus',
             default                            => strtolower($prefix),
         };
     }
