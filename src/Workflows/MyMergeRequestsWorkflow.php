@@ -16,7 +16,7 @@ class MyMergeRequestsWorkflow
 {
     private const ICONS = ['success' => '✅', 'failed' => '❌', 'running' => '🔄', 'pending' => '⏳'];
     private const READY_STATUS = 'Ready for testing';
-    private const HIDDEN_STATUSES = ['ready for testing', 'done'];
+    private const HIDDEN_STATUSES = ['ready for testing', 'done', 'testing'];
 
     public function __construct(
         private GitLabClient $gitlab,
