@@ -287,6 +287,47 @@ class GitLabClient implements VCSProviderContract
     }
 
     /**
+     * MRs assigned to the configured user merged in the last $days days, latest first.
+     *
+     * @return array<int, array{project_id:int, iid:int, title:string, url:string, merged_at:string}>
+     * @throws GuzzleException
+     */
+    public function getMergedMergeRequests(int $days): array
+    {
+        $since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-$days days"));
+
+        // No merged_after filter in the list API: merging bumps updated_at, so narrow by it and check merged_at below
+        $list = json_decode($this->client->get(config('cherry-picker.gitlab.api_url') . '/merge_requests', [
+            'headers' => ['PRIVATE-TOKEN' => $this->getPAT()],
+            'query' => [
+                'scope' => 'all',
+                'state' => 'merged',
+                'assignee_username' => config('cherry-picker.gitlab.mr_assignee_username'),
+                'updated_after' => $since,
+                'per_page' => 100,
+            ],
+        ])->getBody()->getContents(), true);
+
+        $mrs = [];
+        foreach ($list as $mr) {
+            if (strtotime($mr['merged_at'] ?? '') < strtotime($since)) {
+                continue;
+            }
+            $mrs[] = [
+                'project_id' => $mr['project_id'],
+                'iid' => $mr['iid'],
+                'title' => $mr['title'],
+                'url' => $mr['web_url'],
+                'merged_at' => $mr['merged_at'],
+            ];
+        }
+
+        usort($mrs, fn ($a, $b) => strtotime($b['merged_at']) <=> strtotime($a['merged_at']));
+
+        return $mrs;
+    }
+
+    /**
      * @throws GuzzleException
      */
     public function addMergeRequestNote(int $projectId, int $mrIid, string $body): void

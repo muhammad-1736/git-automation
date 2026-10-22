@@ -13,10 +13,16 @@ return [
         'api_url'               => (string) env('GITLAB_API_URL'),
         'mr_assignee_username'  => (string) env('GITLAB_MR_ASSIGNEE_USERNAME', 'YOU'),
         'review_mention'        => (string) env('REVIEW_MENTION', '@LEAD'),
+        'merged_mr_days'        => (int) env('GITLAB_MERGED_MR_DAYS', 7),
     ],
     'jira'   => [
         'email'                 => (string) env('JIRA_EMAIL'),
         'personal_access_token' => (string) env('JIRA_TOKEN'),
         'api_url'               => (string) env('JIRA_API_URL'),
+        'testers'               => explode(',', (string) env('JIRA_TESTERS', 'TESTERNAME1,TESTERNAME2')),
+    ],
+    'tempo'  => [
+        'api_url'               => (string) env('TEMPO_API_URL', 'https://api.tempo.io/4'),
+        'token'                 => (string) env('TEMPO_TOKEN'),
     ],
 ];

@@ -97,6 +97,126 @@ class JiraClient implements WMTProviderContract
         throw new \Exception('Fix version format is invalid.');
     }
 
+    public function getStatus(string $ticketNumber): string
+    {
+        return $this->getDataSafe($ticketNumber, 'fields.status.name', "Ticket $ticketNumber has no status");
+    }
+
+    /**
+     * Moves the issue through the transition leading to $statusName.
+     *
+     * @throws GuzzleException
+     */
+    public function transitionTo(string $ticketNumber, string $statusName): void
+    {
+        $transitions = $this->api('GET', "/issue/$ticketNumber/transitions")['transitions'];
+
+        foreach ($transitions as $transition) {
+            if (strcasecmp($transition['to']['name'], $statusName) === 0 || strcasecmp($transition['name'], $statusName) === 0) {
+                $this->api('POST', "/issue/$ticketNumber/transitions", ['transition' => ['id' => $transition['id']]]);
+                return;
+            }
+        }
+
+        throw new Exception("No transition to '$statusName' available for $ticketNumber");
+    }
+
+    /**
+     * @throws GuzzleException
+     */
+    public function assign(string $ticketNumber, string $accountId): void
+    {
+        $this->api('PUT', "/issue/$ticketNumber/assignee", ['accountId' => $accountId]);
+    }
+
+    /**
+     * Adds a comment; every "@Name" from $mentions (name => accountId) becomes a real Jira mention.
+     *
+     * @throws GuzzleException
+     */
+    public function addComment(string $ticketNumber, string $text, array $mentions = []): void
+    {
+        $this->api('POST', "/issue/$ticketNumber/comment", ['body' => self::toAdf($text, $mentions)]);
+    }
+
+    /**
+     * Plain text -> Atlassian Document Format (one paragraph per line).
+     */
+    public static function toAdf(string $text, array $mentions = []): array
+    {
+        $pattern = $mentions
+            ? '/(@(?:' . implode('|', array_map(fn ($n) => preg_quote($n, '/'), array_keys($mentions))) . '))/'
+            : '/(?!)/';
+
+        $paragraphs = [];
+        foreach (explode("\n", $text) as $line) {
+            $content = [];
+            foreach (preg_split($pattern, $line, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) as $part) {
+                $name = substr($part, 1);
+                $content[] = $part[0] === '@' && isset($mentions[$name])
+                    ? ['type' => 'mention', 'attrs' => ['id' => $mentions[$name], 'text' => $part]]
+                    : ['type' => 'text', 'text' => $part];
+            }
+            $paragraphs[] = ['type' => 'paragraph', 'content' => $content];
+        }
+
+        return ['type' => 'doc', 'version' => 1, 'content' => $paragraphs];
+    }
+
+    /**
+     * @throws GuzzleException
+     */
+    public function findAccountId(string $displayName): string
+    {
+        foreach ($this->api('GET', '/user/search?query=' . rawurlencode($displayName)) as $user) {
+            if (strcasecmp($user['displayName'], $displayName) === 0) {
+                return $user['accountId'];
+            }
+        }
+
+        throw new Exception("Jira user '$displayName' not found");
+    }
+
+    /**
+     * @throws GuzzleException
+     */
+    public function getMyAccountId(): string
+    {
+        return $this->api('GET', '/myself')['accountId'];
+    }
+
+    /**
+     * Logs time in Tempo (Tempo Cloud REST API v4, needs the numeric Jira issue id).
+     *
+     * @throws GuzzleException
+     */
+    public function logTempo(string $ticketNumber, string $accountId, string $date, int $seconds): void
+    {
+        $this->client->post(config('cherry-picker.tempo.api_url') . '/worklogs', [
+            'headers' => ['Authorization' => 'Bearer ' . config('cherry-picker.tempo.token')],
+            'json' => [
+                'issueId' => (int) $this->getDataSafe($ticketNumber, 'id', "Ticket $ticketNumber has no id"),
+                'authorAccountId' => $accountId,
+                'startDate' => $date,
+                'timeSpentSeconds' => $seconds,
+                'description' => "Working on issue $ticketNumber",
+            ],
+        ]);
+    }
+
+    /**
+     * @throws GuzzleException
+     */
+    private function api(string $method, string $path, ?array $json = null): ?array
+    {
+        $response = $this->client->request($method, config('cherry-picker.jira.api_url') . $path, array_filter([
+            'auth' => [config('cherry-picker.jira.email'), config('cherry-picker.jira.personal_access_token')],
+            'json' => $json,
+        ]));
+
+        return json_decode($response->getBody()->getContents(), true);
+    }
+
     /**
      * @param string $ticketNumber
      * @param string $property
