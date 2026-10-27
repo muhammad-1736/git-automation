@@ -24,5 +24,8 @@ return [
     'tempo'  => [
         'api_url'               => (string) env('TEMPO_API_URL', 'https://api.tempo.io/4'),
         'token'                 => (string) env('TEMPO_TOKEN'),
+        // Required Tempo work attributes, valid values: GET {api_url}/work-attributes
+        'activity'              => (string) env('TEMPO_ACTIVITY', 'Development'),
+        'time_type'             => (string) env('TEMPO_TIME_TYPE', 'Normaltime'),
     ],
 ];

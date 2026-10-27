@@ -200,6 +200,10 @@ class JiraClient implements WMTProviderContract
                 'startDate' => $date,
                 'timeSpentSeconds' => $seconds,
                 'description' => "Working on issue $ticketNumber",
+                'attributes' => [
+                    ['key' => '_Activity_', 'value' => config('cherry-picker.tempo.activity')],
+                    ['key' => '_Timetype_', 'value' => config('cherry-picker.tempo.time_type')],
+                ],
             ],
         ]);
     }
